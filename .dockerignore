@@ -1,7 +1,21 @@
+# hidden files and dirs
+.gitignore
+.git/
+.idea/
+
+# not needed for building OpenVSLAM
 Dockerfile
 LICENSE
 README.md
 wercker.yml
 docs/
 test/
+
+# build directory
 build/
+cmake-build-debug/
+cmake-build-release/
+
+# build cache
+CMakeCache.txt
+CMakeFiles/

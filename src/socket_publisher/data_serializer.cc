@@ -2,8 +2,8 @@
 
 #include "openvslam/data/keyframe.h"
 #include "openvslam/data/landmark.h"
-#include "openvslam/publisher/frame_publisher.h"
-#include "openvslam/publisher/map_publisher.h"
+#include "openvslam/publish/frame_publisher.h"
+#include "openvslam/publish/map_publisher.h"
 
 // map_segment.pb.h will be generated into build/src/socket_publisher/ when make
 #include "map_segment.pb.h"
@@ -12,8 +12,8 @@ namespace socket_publisher {
 
 std::string data_serializer::serialized_reset_signal_{};
 
-data_serializer::data_serializer(const std::shared_ptr<openvslam::publisher::frame_publisher>& frame_publisher,
-                                 const std::shared_ptr<openvslam::publisher::map_publisher>& map_publisher,
+data_serializer::data_serializer(const std::shared_ptr<openvslam::publish::frame_publisher>& frame_publisher,
+                                 const std::shared_ptr<openvslam::publish::map_publisher>& map_publisher,
                                  const unsigned int image_width, const unsigned int image_height)
         : frame_publisher_(frame_publisher), map_publisher_(map_publisher),
           image_width_(image_width), image_height_(image_height),
@@ -133,7 +133,7 @@ std::string data_serializer::serialize_as_protobuf(const std::vector<openvslam::
         const unsigned int keyfrm_id = keyfrm->id_;
 
         // covisibility graph
-        const auto covisibilities = keyfrm->get_covisibilities_over_weight(100);
+        const auto covisibilities = keyfrm->graph_node_->get_covisibilities_over_weight(100);
         if (!covisibilities.empty()) {
             for (const auto covisibility : covisibilities) {
                 if (covisibility->id_ < keyfrm_id) {
@@ -146,7 +146,7 @@ std::string data_serializer::serialize_as_protobuf(const std::vector<openvslam::
         }
 
         // spanning tree
-        auto spanning_parent = keyfrm->get_spanning_parent();
+        auto spanning_parent = keyfrm->graph_node_->get_spanning_parent();
         if (spanning_parent) {
             const auto edge_obj = map.add_edges();
             edge_obj->set_id0(keyfrm_id);
@@ -154,7 +154,7 @@ std::string data_serializer::serialize_as_protobuf(const std::vector<openvslam::
         }
 
         // loop edges
-        const auto loop_edges = keyfrm->get_loop_edges();
+        const auto loop_edges = keyfrm->graph_node_->get_loop_edges();
         for (const auto loop_edge : loop_edges) {
             if (loop_edge->id_ < keyfrm_id) {
                 continue;

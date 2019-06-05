@@ -20,7 +20,8 @@ Cloning the repository:
 
 .. NOTE ::
 
-    Docker users can use :ref:`Docker <chapter-docker>` instead of preparing the dependencies manually.
+    Users of **Docker for Ubuntu** can use :ref:`Docker <chapter-docker>` instead of preparing the dependencies manually.
+    (Docker for Mac are not supported.)
 
 
 .. _section-dependencies:
@@ -48,26 +49,28 @@ Requirements for OpenVSLAM
 
 .. NOTE ::
 
-    OpenCV with GUI support is necessary for using the build-in viewer.
+    OpenCV with GUI support is necessary for using the built-in viewer (Pangolin Viewer).
 
 .. NOTE ::
 
-    OpenCV with movie support is necessary if you plan on using movies (e.g. ``.mp4``) as inputs.
+    OpenCV with video support is necessary if you plan on using video files (e.g. ``.mp4``) as inputs.
 
 Requirements for Pangolin Viewer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We provided a simple viewer implemented with `Pangolin <https://github.com/stevenlovegrove/Pangolin>`_.
-Please install the following dependencies if you plan on using the viewer.
+| (**Recommended**)
+| We provided a simple viewer implemented with `Pangolin <https://github.com/stevenlovegrove/Pangolin>`_.
+| Please install the following dependencies if you plan on using the viewer.
 
 * `Pangolin <https://github.com/stevenlovegrove/Pangolin>`_ : Please use the latest release. Tested on commit ID `ad8b5f8 <https://github.com/stevenlovegrove/Pangolin/tree/ad8b5f83222291c51b4800d5a5873b0e90a0cf81>`_.
 
 * `GLEW <http://glew.sourceforge.net/>`_ : Required by Pangolin.
 
-Required for Socket Publisher
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Requirements for Socket Publisher
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To be written soon.
+| (**Optional**)
+| Will be provided soon.
 
 Recommended
 ^^^^^^^^^^^
@@ -188,7 +191,7 @@ Jump to :ref:`Common Installation Instructions <subsection-common-linux-macos>` 
 Common Installation Instructions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Download, build and install **custom DBoW2** from source.
+Download, build and install **the custom DBoW2** from source.
 
 .. code-block:: bash
 

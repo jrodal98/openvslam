@@ -22,8 +22,8 @@ graph_optimizer::graph_optimizer(data::map_database* map_db, const bool fix_scal
         : map_db_(map_db), fix_scale_(fix_scale) {}
 
 void graph_optimizer::optimize(data::keyframe* loop_keyfrm, data::keyframe* curr_keyfrm,
-                               const map::keyframe_Sim3_pairs_t& non_corrected_Sim3s,
-                               const map::keyframe_Sim3_pairs_t& pre_corrected_Sim3s,
+                               const module::keyframe_Sim3_pairs_t& non_corrected_Sim3s,
+                               const module::keyframe_Sim3_pairs_t& pre_corrected_Sim3s,
                                const std::map<data::keyframe*, std::set<data::keyframe*>>& loop_connections) const {
     // 1. optimizerを構築
 
@@ -121,7 +121,7 @@ void graph_optimizer::optimize(data::keyframe* loop_keyfrm, data::keyframe* curr
             // current vs loop以外のedgeについては，weight thresholdを超えているもののみ
             // を追加する
             if ((id1 != curr_keyfrm->id_ || id2 != loop_keyfrm->id_)
-                && keyfrm->get_weight(connected_keyfrm) < min_weight) {
+                && keyfrm->graph_node_->get_weight(connected_keyfrm) < min_weight) {
                 continue;
             }
 
@@ -144,7 +144,7 @@ void graph_optimizer::optimize(data::keyframe* loop_keyfrm, data::keyframe* curr
         const auto iter1 = non_corrected_Sim3s.find(keyfrm);
         const ::g2o::Sim3 Sim3_w1 = ((iter1 != non_corrected_Sim3s.end()) ? iter1->second : Sim3s_cw.at(id1)).inverse();
 
-        auto parent_node = keyfrm->get_spanning_parent();
+        auto parent_node = keyfrm->graph_node_->get_spanning_parent();
         if (parent_node) {
             const auto id2 = parent_node->id_;
 
@@ -166,7 +166,7 @@ void graph_optimizer::optimize(data::keyframe* loop_keyfrm, data::keyframe* curr
         }
 
         // loop edgeはweightにかかわらず追加する
-        const auto loop_edges = keyfrm->get_loop_edges();
+        const auto loop_edges = keyfrm->graph_node_->get_loop_edges();
         for (auto connected_keyfrm : loop_edges) {
             const auto id2 = connected_keyfrm->id_;
 
@@ -188,7 +188,7 @@ void graph_optimizer::optimize(data::keyframe* loop_keyfrm, data::keyframe* curr
         }
 
         // threshold weight以上のcovisibilitiesを追加する
-        const auto connected_keyfrms = keyfrm->get_covisibilities_over_weight(min_weight);
+        const auto connected_keyfrms = keyfrm->graph_node_->get_covisibilities_over_weight(min_weight);
         for (auto connected_keyfrm : connected_keyfrms) {
             // null check
             if (!connected_keyfrm || !parent_node) {
@@ -196,7 +196,7 @@ void graph_optimizer::optimize(data::keyframe* loop_keyfrm, data::keyframe* curr
             }
             // parent-childのedgeはすでに追加しているので除外
             if (*connected_keyfrm == *parent_node
-                || keyfrm->has_spanning_child(connected_keyfrm)) {
+                || keyfrm->graph_node_->has_spanning_child(connected_keyfrm)) {
                 continue;
             }
             // loop対応している場合はすでに追加しているので除外
@@ -266,8 +266,8 @@ void graph_optimizer::optimize(data::keyframe* loop_keyfrm, data::keyframe* curr
                 continue;
             }
 
-            const auto id = (lm->keyfrm_id_in_loop_fusion_ == curr_keyfrm->id_)
-                            ? lm->keyfrm_id_in_loop_BA_ : lm->get_ref_keyframe()->id_;
+            const auto id = (lm->loop_fusion_identifier_ == curr_keyfrm->id_)
+                            ? lm->ref_keyfrm_id_in_loop_fusion_ : lm->get_ref_keyframe()->id_;
 
             const ::g2o::Sim3& Sim3_cw = Sim3s_cw.at(id);
             const ::g2o::Sim3& corrected_Sim3_wc = corrected_Sim3s_wc.at(id);

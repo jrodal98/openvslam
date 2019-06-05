@@ -38,15 +38,15 @@ void mono_localization(const std::shared_ptr<openvslam::config>& cfg,
     // build a SLAM system
     openvslam::system SLAM(cfg, vocab_file_path);
     // load the prebuilt map
-    SLAM.load_message_pack(map_db_path);
+    SLAM.load_map_database(map_db_path);
     // startup the SLAM process (it does not need initialization of a map)
     SLAM.startup(false);
     // select to activate the mapping module or not
     if (mapping) {
-        SLAM.activate_mapping_module();
+        SLAM.enable_mapping_module();
     }
     else {
-        SLAM.deactivate_mapping_module();
+        SLAM.disable_mapping_module();
     }
 
     // create a viewer object
@@ -145,7 +145,7 @@ int main(int argc, char* argv[]) {
     auto vocab_file_path = op.add<popl::Value<std::string>>("v", "vocab", "vocabulary file path");
     auto img_dir_path = op.add<popl::Value<std::string>>("i", "img-dir", "directory path which contains images");
     auto setting_file_path = op.add<popl::Value<std::string>>("s", "setting", "setting file path");
-    auto map_db_path = op.add<popl::Value<std::string>>("d", "map-db", "path to a prebuilt map database");
+    auto map_db_path = op.add<popl::Value<std::string>>("p", "map-db", "path to a prebuilt map database");
     auto mapping = op.add<popl::Switch>("", "mapping", "perform mapping as well as localization");
     auto mask_img_path = op.add<popl::Value<std::string>>("", "mask", "mask image path", "");
     auto frame_skip = op.add<popl::Value<unsigned int>>("", "frame-skip", "interval of frame skip", 1);

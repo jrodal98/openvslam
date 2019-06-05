@@ -18,13 +18,6 @@ The later parts of this chapter explains what each of the commands do in more de
     $ ls
     run_euroc_slam   lib/   ...
 
-    # download a sample dataset from Google Drive
-    FILE_ID="1mYJ_W6WsMjOqoNGaEoOvIe17NuEMYcSz"
-    curl -sc /tmp/cookie "https://drive.google.com/uc?export=download&id=${FILE_ID}" > /dev/null
-    CODE="$(awk '/_warning_/ {print $NF}' /tmp/cookie)"
-    curl -sLb /tmp/cookie "https://drive.google.com/uc?export=download&confirm=${CODE}&id=${FILE_ID}" -o aist_entrance_hall_1.zip
-    unzip aist_entrance_hall_1.zip
-
     # download an ORB vocabulary from Google Drive
     FILE_ID="1wUPb328th8bUqhOk-i8xllt5mgRW4n84"
     curl -sc /tmp/cookie "https://drive.google.com/uc?export=download&id=${FILE_ID}" > /dev/null
@@ -32,11 +25,27 @@ The later parts of this chapter explains what each of the commands do in more de
     curl -sLb /tmp/cookie "https://drive.google.com/uc?export=download&confirm=${CODE}&id=${FILE_ID}" -o orb_vocab.zip
     unzip orb_vocab.zip
 
+    # download a sample dataset from Google Drive
+    FILE_ID="1d8kADKWBptEqTF7jEVhKatBEdN7g0ikY"
+    curl -sc /tmp/cookie "https://drive.google.com/uc?export=download&id=${FILE_ID}" > /dev/null
+    CODE="$(awk '/_warning_/ {print $NF}' /tmp/cookie)"
+    curl -sLb /tmp/cookie "https://drive.google.com/uc?export=download&confirm=${CODE}&id=${FILE_ID}" -o aist_living_lab_1.zip
+    unzip aist_living_lab_1.zip
+
+    # download a sample dataset from Google Drive
+    FILE_ID="1TVf2D2QvMZPHsFoTb7HNxbXclPoFMGLX"
+    curl -sc /tmp/cookie "https://drive.google.com/uc?export=download&id=${FILE_ID}" > /dev/null
+    CODE="$(awk '/_warning_/ {print $NF}' /tmp/cookie)"
+    curl -sLb /tmp/cookie "https://drive.google.com/uc?export=download&confirm=${CODE}&id=${FILE_ID}" -o aist_living_lab_2.zip
+    unzip aist_living_lab_2.zip
+
     # run tracking and mapping
-    ./run_movie_slam -v ./orb_vocab/orb_vocab.dbow2 -m ./aist_entrance_hall_1/movie.mp4 -s ./aist_entrance_hall_1/config.yaml --frame-skip 3 --map-db map.msg
+    ./run_video_slam -v ./orb_vocab/orb_vocab.dbow2 -m ./aist_living_lab_1/movie.mp4 -s ./aist_living_lab_1/config.yaml --frame-skip 3 --no-sleep --map-db map.msg
+    # click the [Terminate] button to close the viewer
+    # you can find map.msg in the current directory
 
     # run localization
-    ./run_movie_localization -v ./orb_vocab/orb_vocab.dbow2 -m ./aist_entrance_hall_1/movie.mp4 -s ./aist_entrance_hall_1/config.yaml --frame-skip 3 --map-db map.msg
+    ./run_video_localization -v ./orb_vocab/orb_vocab.dbow2 -m ./aist_living_lab_2/movie.mp4 -s ./aist_living_lab_2/config.yaml --frame-skip 3 --no-sleep --map-db map.msg
 
 
 Sample Datasets
@@ -135,7 +144,7 @@ Tracking and Mapping
 ^^^^^^^^^^^^^^^^^^^^
 
 Here we should how to run SLAM and create a map database file with ``aist_living_lab_1`` dataset.
-You can use ``./run_movie_slam`` to run SLAM with the video file.
+You can use ``./run_video_slam`` to run SLAM with the video file.
 
 
 .. code-block:: bash
@@ -143,13 +152,13 @@ You can use ``./run_movie_slam`` to run SLAM with the video file.
     # at the build directory of OpenVSLAM
     $ ls
     ...
-    run_movie_slam
+    run_video_slam
     ...
-    $ ./run_movie_slam -h
+    $ ./run_video_slam -h
     Allowed options:
       -h, --help             produce help message
       -v, --vocab arg        vocabulary file path
-      -m, --movie arg        movie file path
+      -m, --video arg        video file path
       -s, --setting arg      setting file path
       --mask arg             mask image path
       --frame-skip arg (=1)  interval of frame skip
@@ -166,7 +175,7 @@ The paths should be changed accordingly.
 
 .. code-block:: bash
 
-    $ ./run_movie_slam \
+    $ ./run_video_slam \
         -v /path/to/orb_vocab/orb_vocab.dbow2 \
         -s /path/to/aist_living_lab_1/config.yaml \
         -m /path/to/aist_living_lab_1/movie.mp4 \
@@ -260,6 +269,8 @@ If the two viewers are not launching correctly, check if you launched the comman
     [2019-05-20 17:55:40.284] [I] clear map database
 
 
+Please click the **Terminate** button to close the viewer.
+
 After terminating, you will find a map database file ``aist_living_lab_1_map.msg``.
 
 
@@ -278,16 +289,16 @@ Localization
 ^^^^^^^^^^^^
 
 In this section, we will localize the frames in ``aist_living_lab_2`` dataset using the created map file ``aist_living_lab_1_map.msg``.
-You can use ``./run_movie_localization`` to run localization.
+You can use ``./run_video_localization`` to run localization.
 
 
 .. code-block:: bash
 
-    $ ./run_movie_localization -h
+    $ ./run_video_localization -h
     Allowed options:
       -h, --help             produce help message
       -v, --vocab arg        vocabulary file path
-      -m, --movie arg        movie file path
+      -m, --video arg        video file path
       -s, --setting arg      setting file path
       -d, --map-db arg       path to a prebuilt map database
       --mapping              perform mapping as well as localization
@@ -304,7 +315,7 @@ The paths should be changed accordingly.
 
 .. code-block:: bash
 
-    $ ./run_movie_localization \
+    $ ./run_video_localization \
         -v /path/to/orb_vocab/orb_vocab.dbow2 \
         -s /path/to/aist_living_lab_2/config.yaml \
         -m /path/to/aist_living_lab_2/movie.mp4 \

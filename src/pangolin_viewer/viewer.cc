@@ -4,14 +4,14 @@
 #include "openvslam/system.h"
 #include "openvslam/data/keyframe.h"
 #include "openvslam/data/landmark.h"
-#include "openvslam/publisher/frame_publisher.h"
-#include "openvslam/publisher/map_publisher.h"
+#include "openvslam/publish/frame_publisher.h"
+#include "openvslam/publish/map_publisher.h"
 
 namespace pangolin_viewer {
 
 viewer::viewer(const std::shared_ptr<openvslam::config>& cfg, openvslam::system* system,
-               const std::shared_ptr<openvslam::publisher::frame_publisher>& frame_publisher,
-               const std::shared_ptr<openvslam::publisher::map_publisher>& map_publisher)
+               const std::shared_ptr<openvslam::publish::frame_publisher>& frame_publisher,
+               const std::shared_ptr<openvslam::publish::map_publisher>& map_publisher)
         : system_(system), frame_publisher_(frame_publisher), map_publisher_(map_publisher),
           interval_ms_(1000.0f / cfg->yaml_node_["PangolinViewer.fps"].as<float>(30.0)),
           viewpoint_x_(cfg->yaml_node_["PangolinViewer.viewpoint_x"].as<float>(0.0)),
@@ -25,8 +25,8 @@ viewer::viewer(const std::shared_ptr<openvslam::config>& cfg, openvslam::system*
           camera_size_(cfg->yaml_node_["PangolinViewer.camera_size"].as<float>(0.15)),
           camera_line_width_(cfg->yaml_node_["PangolinViewer.camera_line_width"].as<unsigned int>(2)),
           cs_(cfg->yaml_node_["PangolinViewer.color_scheme"].as<std::string>("black")),
-          mapping_mode_(system->get_mapping_module_status()),
-          loop_detection_mode_(system->get_loop_detector_status()) {}
+          mapping_mode_(system->mapping_module_is_enabled()),
+          loop_detection_mode_(system->loop_detector_is_enabled()) {}
 
 void viewer::run() {
     is_terminated_ = false;
@@ -227,7 +227,7 @@ void viewer::draw_keyframes() {
             const openvslam::Vec3_t cam_center_1 = keyfrm->get_cam_center();
 
             // covisibility graph
-            const auto covisibilities = keyfrm->get_covisibilities_over_weight(100);
+            const auto covisibilities = keyfrm->graph_node_->get_covisibilities_over_weight(100);
             if (!covisibilities.empty()) {
                 for (const auto covisibility : covisibilities) {
                     if (covisibility->id_ < keyfrm->id_) {
@@ -239,14 +239,14 @@ void viewer::draw_keyframes() {
             }
 
             // spanning tree
-            auto spanning_parent = keyfrm->get_spanning_parent();
+            auto spanning_parent = keyfrm->graph_node_->get_spanning_parent();
             if (spanning_parent) {
                 const openvslam::Vec3_t cam_center_2 = spanning_parent->get_cam_center();
                 draw_edge(cam_center_1, cam_center_2);
             }
 
             // loop edges
-            const auto loop_edges = keyfrm->get_loop_edges();
+            const auto loop_edges = keyfrm->graph_node_->get_loop_edges();
             for (const auto loop_edge : loop_edges) {
                 if (loop_edge->id_ < keyfrm->id_) {
                     continue;
@@ -366,18 +366,18 @@ void viewer::reset() {
 
     // reset mapping mode
     if (mapping_mode_) {
-        system_->activate_mapping_module();
+        system_->enable_mapping_module();
     }
     else {
-        system_->deactivate_mapping_module();
+        system_->disable_mapping_module();
     }
 
     // reset loop detector
     if (loop_detection_mode_) {
-        system_->activate_loop_detector();
+        system_->enable_loop_detector();
     }
     else {
-        system_->deactivate_loop_detector();
+        system_->disable_loop_detector();
     }
 
     // reset internal state
@@ -398,21 +398,21 @@ void viewer::check_state_transition() {
 
     // mapping module
     if (*menu_mapping_mode_ && !mapping_mode_) {
-        system_->activate_mapping_module();
+        system_->enable_mapping_module();
         mapping_mode_ = true;
     }
     else if (!*menu_mapping_mode_ && mapping_mode_) {
-        system_->deactivate_mapping_module();
+        system_->disable_mapping_module();
         mapping_mode_ = false;
     }
 
     // loop detector
     if (*menu_loop_detection_mode_ && !loop_detection_mode_) {
-        system_->activate_loop_detector();
+        system_->enable_loop_detector();
         loop_detection_mode_ = true;
     }
     else if (!*menu_loop_detection_mode_ && loop_detection_mode_) {
-        system_->deactivate_loop_detector();
+        system_->disable_loop_detector();
         loop_detection_mode_ = false;
     }
 }

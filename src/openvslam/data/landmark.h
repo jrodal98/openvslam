@@ -21,6 +21,8 @@ class map_database;
 
 class landmark {
 public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     //! constructor
     landmark(const Vec3_t& pos_w, keyframe* ref_keyfrm, map_database* map_db);
 
@@ -95,9 +97,9 @@ public:
     //! get replace landmark
     landmark* get_replaced() const;
 
-    void increase_num_visible(unsigned int num_visible = 1);
-    void increase_num_found(unsigned int num_found = 1);
-    float get_found_per_visible_ratio() const;
+    void increase_num_observable(unsigned int num_observable = 1);
+    void increase_num_observed(unsigned int num_observed = 1);
+    float get_observed_ratio() const;
 
     //! encode landmark information as JSON
     nlohmann::json to_json() const;
@@ -109,23 +111,18 @@ public:
     unsigned int num_observations_ = 0;
 
     // frame trackingに用いられる変数
-    float x_in_tracking_;
-    float y_in_tracking_;
+    Vec2_t reproj_in_tracking_;
     float x_right_in_tracking_;
-    bool is_observed_in_tracking_;
+    bool is_observable_in_tracking_;
     int scale_level_in_tracking_;
-    unsigned int ref_frm_id_in_tracking_ = 0;
-    unsigned int last_frm_id_in_tracking_ = 0;
-
-    // local BAの際に重複を避けるために用いられる変数
-    unsigned int lead_keyfrm_id_in_local_BA_ = 0;
+    unsigned int identifier_in_local_map_update_ = 0;
+    unsigned int identifier_in_local_lm_search_ = 0;
 
     // loop closingの際に重複を避けるために用いられる変数
-    unsigned int keyfrm_id_in_loop_validation_ = 0;
-    unsigned int keyfrm_id_in_loop_fusion_ = 0;
-    unsigned int keyfrm_id_in_loop_BA_ = 0;
+    unsigned int loop_fusion_identifier_ = 0;
+    unsigned int ref_keyfrm_id_in_loop_fusion_ = 0;
     Vec3_t pos_w_after_global_BA_;
-    unsigned int lead_keyfrm_id_in_loop_BA_ = 0;
+    unsigned int loop_BA_identifier_ = 0;
 
 private:
     //! world coordinates of this landmark
@@ -144,8 +141,8 @@ private:
     keyframe* ref_keyfrm_;
 
     // track counter
-    unsigned int num_visible_ = 1;
-    unsigned int num_found_ = 1;
+    unsigned int num_observable_ = 1;
+    unsigned int num_observed_ = 1;
 
     //! this landmark will be erased shortly or not
     bool will_be_erased_ = false;
