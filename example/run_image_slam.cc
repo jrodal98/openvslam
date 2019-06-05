@@ -1,22 +1,20 @@
 #include "util/image_util.h"
 
 #ifdef USE_PANGOLIN_VIEWER
-#include "pangolin_viewer/viewer.h"
+#include <pangolin_viewer/viewer.h>
 #elif USE_SOCKET_PUBLISHER
-#include "socket_publisher/publisher.h"
+#include <socket_publisher/publisher.h>
 #endif
 
-#include "openvslam/system.h"
-#include "openvslam/config.h"
+#include <openvslam/system.h>
+#include <openvslam/config.h>
 
 #include <iostream>
 #include <chrono>
 #include <numeric>
-
 #include <opencv2/core/core.hpp>
 #include <spdlog/spdlog.h>
 #include <popl.hpp>
-
 #ifdef USE_STACK_TRACE_LOGGER
 #include <glog/logging.h>
 #endif
@@ -25,10 +23,11 @@
 #include <gperftools/profiler.h>
 #endif
 
-void mono_tracking(const std::shared_ptr<openvslam::config>& cfg,
-                   const std::string& vocab_file_path, const std::string& image_dir_path, const std::string& mask_img_path,
+void mono_tracking(const std::shared_ptr<openvslam::config> &cfg,
+                   const std::string &vocab_file_path, const std::string &image_dir_path, const std::string &mask_img_path,
                    const unsigned int frame_skip, const bool no_sleep, const bool auto_term,
-                   const bool eval_log, const std::string& map_db_path) {
+                   const bool eval_log, const std::string &map_db_path)
+{
     // load the mask image
     const cv::Mat mask = mask_img_path.empty() ? cv::Mat{} : cv::imread(mask_img_path, cv::IMREAD_GRAYSCALE);
 
@@ -53,28 +52,41 @@ void mono_tracking(const std::shared_ptr<openvslam::config>& cfg,
 
     // run the SLAM in another thread
     std::thread thread([&]() {
-        for (unsigned int i = 0; i < img_paths.size(); ++i) {
-            const auto& img_path = img_paths.at(i);
-            const auto img = cv::imread(img_path, cv::IMREAD_UNCHANGED);
+        unsigned int i = 1;
+        // for (unsigned int i = 0; i < img_paths.size(); ++i) {
+        while (true)
+        { // bad solution for now?
+            // const auto& img_path = img_paths.at(i);
+            char buffer[30];
+            sprintf(buffer, "images/output_%07d.jpg", i);
+            // const auto img_path(buffer);
+            const auto img = cv::imread(buffer, cv::IMREAD_UNCHANGED);
+            // const auto img = cv::imread(buffer, 1);
 
             const auto tp_1 = std::chrono::steady_clock::now();
 
-            if (!img.empty() && (i % frame_skip == 0)) {
+            if (!img.empty() && (i++ % frame_skip == 0))
+            {
                 // input the current frame and estimate the camera pose
+                // i++;
                 SLAM.track_for_monocular(img, timestamp, mask);
+                // std::cout << i << '\n';
             }
 
             const auto tp_2 = std::chrono::steady_clock::now();
 
             const auto track_time = std::chrono::duration_cast<std::chrono::duration<double>>(tp_2 - tp_1).count();
-            if (i % frame_skip == 0) {
+            if (i % frame_skip == 0)
+            {
                 track_times.push_back(track_time);
             }
 
             // wait until the timestamp of the next frame
-            if (!no_sleep) {
+            if (!no_sleep)
+            {
                 const auto wait_time = 1.0 / cfg->camera_->fps_ - track_time;
-                if (0.0 < wait_time) {
+                if (0.0 < wait_time)
+                {
                     std::this_thread::sleep_for(std::chrono::microseconds(static_cast<unsigned int>(wait_time * 1e6)));
                 }
             }
@@ -82,23 +94,27 @@ void mono_tracking(const std::shared_ptr<openvslam::config>& cfg,
             timestamp += 1.0 / cfg->camera_->fps_;
 
             // check if the termination of SLAM system is requested or not
-            if (SLAM.terminate_is_requested()) {
+            if (SLAM.terminate_is_requested())
+            {
                 break;
             }
         }
 
         // wait until the loop BA is finished
-        while (SLAM.loop_BA_is_running()) {
+        while (SLAM.loop_BA_is_running())
+        {
             std::this_thread::sleep_for(std::chrono::microseconds(5000));
         }
 
         // automatically close the viewer
 #ifdef USE_PANGOLIN_VIEWER
-        if (auto_term) {
+        if (auto_term)
+        {
             viewer.request_terminate();
         }
 #elif USE_SOCKET_PUBLISHER
-        if (auto_term) {
+        if (auto_term)
+        {
             publisher.request_terminate();
         }
 #endif
@@ -112,25 +128,27 @@ void mono_tracking(const std::shared_ptr<openvslam::config>& cfg,
 #endif
 
     thread.join();
-
     // shutdown the SLAM process
     SLAM.shutdown();
 
-    if (eval_log) {
+    if (eval_log)
+    {
         // output the trajectories for evaluation
         SLAM.save_frame_trajectory("frame_trajectory.txt", "TUM");
         SLAM.save_keyframe_trajectory("keyframe_trajectory.txt", "TUM");
         // output the tracking times for evaluation
         std::ofstream ofs("track_times.txt", std::ios::out);
-        if (ofs.is_open()) {
-            for (const auto track_time : track_times) {
+        if (ofs.is_open())
+        {
+            for (const auto track_time : track_times)
+            {
                 ofs << track_time << std::endl;
             }
             ofs.close();
         }
     }
-
-    if (!map_db_path.empty()) {
+    if (!map_db_path.empty())
+    {
         // output the map database
         SLAM.save_map_database(map_db_path);
     }
@@ -141,7 +159,8 @@ void mono_tracking(const std::shared_ptr<openvslam::config>& cfg,
     std::cout << "mean tracking time: " << total_track_time / track_times.size() << "[s]" << std::endl;
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[])
+{
 #ifdef USE_STACK_TRACE_LOGGER
     google::InitGoogleLogging(argv[0]);
     google::InstallFailureSignalHandler();
@@ -159,11 +178,13 @@ int main(int argc, char* argv[]) {
     auto auto_term = op.add<popl::Switch>("", "auto-term", "automatically terminate the viewer");
     auto debug_mode = op.add<popl::Switch>("", "debug", "debug mode");
     auto eval_log = op.add<popl::Switch>("", "eval-log", "store trajectory and tracking times for evaluation");
-    auto map_db_path = op.add<popl::Value<std::string>>("p", "map-db", "store a map database at this path after SLAM", "");
-    try {
+    auto map_db_path = op.add<popl::Value<std::string>>("", "map-db", "store a map database at this path after SLAM", "");
+    try
+    {
         op.parse(argc, argv);
     }
-    catch (const std::exception& e) {
+    catch (const std::exception &e)
+    {
         std::cerr << e.what() << std::endl;
         std::cerr << std::endl;
         std::cerr << op << std::endl;
@@ -171,11 +192,13 @@ int main(int argc, char* argv[]) {
     }
 
     // check validness of options
-    if (help->is_set()) {
+    if (help->is_set())
+    {
         std::cerr << op << std::endl;
         return EXIT_FAILURE;
     }
-    if (!vocab_file_path->is_set() || !img_dir_path->is_set() || !setting_file_path->is_set()) {
+    if (!vocab_file_path->is_set() || !img_dir_path->is_set() || !setting_file_path->is_set())
+    {
         std::cerr << "invalid arguments" << std::endl;
         std::cerr << std::endl;
         std::cerr << op << std::endl;
@@ -184,19 +207,23 @@ int main(int argc, char* argv[]) {
 
     // setup logger
     spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] %^[%L] %v%$");
-    if (debug_mode->is_set()) {
+    if (debug_mode->is_set())
+    {
         spdlog::set_level(spdlog::level::debug);
     }
-    else {
+    else
+    {
         spdlog::set_level(spdlog::level::info);
     }
 
     // load configuration
     std::shared_ptr<openvslam::config> cfg;
-    try {
+    try
+    {
         cfg = std::make_shared<openvslam::config>(setting_file_path->value());
     }
-    catch (const std::exception& e) {
+    catch (const std::exception &e)
+    {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
     }
@@ -206,12 +233,14 @@ int main(int argc, char* argv[]) {
 #endif
 
     // run tracking
-    if (cfg->camera_->setup_type_ == openvslam::camera::setup_type_t::Monocular) {
+    if (cfg->camera_->setup_type_ == openvslam::camera::setup_type_t::Monocular)
+    {
         mono_tracking(cfg, vocab_file_path->value(), img_dir_path->value(), mask_img_path->value(),
                       frame_skip->value(), no_sleep->is_set(), auto_term->is_set(),
                       eval_log->is_set(), map_db_path->value());
     }
-    else {
+    else
+    {
         throw std::runtime_error("Invalid setup type: " + cfg->camera_->get_setup_type_string());
     }
 

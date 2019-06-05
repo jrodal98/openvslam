@@ -19,29 +19,34 @@
 #include <fbow/fbow.h>
 #endif
 
-namespace openvslam {
+namespace openvslam
+{
 
-namespace camera {
+namespace camera
+{
 class base;
 } // namespace camera
 
-namespace feature {
+namespace feature
+{
 class orb_extractor;
 } // namespace feature
 
-namespace data {
+namespace data
+{
 
 class keyframe;
 class landmark;
 
-class frame {
+class frame
+{
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     frame() = default;
 
-    bool operator==(const frame& frm) { return this->id_ == frm.id_; }
-    bool operator!=(const frame& frm) { return !(*this == frm); }
+    bool operator==(const frame &frm) { return this->id_ == frm.id_; }
+    bool operator!=(const frame &frm) { return !(*this == frm); }
 
     /**
      * Constructor for monocular frame
@@ -53,10 +58,10 @@ public:
      * @param depth_thr
      * @param mask
      */
-    frame(const cv::Mat& img_gray, const double timestamp,
-          feature::orb_extractor* extractor, bow_vocabulary* bow_vocab,
-          camera::base* camera, const float depth_thr,
-          const cv::Mat& mask = cv::Mat{});
+    frame(const cv::Mat &img_gray, const double timestamp,
+          feature::orb_extractor *extractor, bow_vocabulary *bow_vocab,
+          camera::base *camera, const float depth_thr,
+          const cv::Mat &mask = cv::Mat{}, const cv::Mat &img_colored = cv::Mat{});
 
     /**
      * Constructor for stereo frame
@@ -70,10 +75,10 @@ public:
      * @param depth_thr
      * @param mask
      */
-    frame(const cv::Mat& left_img_gray, const cv::Mat& right_img_gray, const double timestamp,
-          feature::orb_extractor* extractor_left, feature::orb_extractor* extractor_right, bow_vocabulary* bow_vocab,
-          camera::base* camera, const float depth_thr,
-          const cv::Mat& mask = cv::Mat{});
+    frame(const cv::Mat &left_img_gray, const cv::Mat &right_img_gray, const double timestamp,
+          feature::orb_extractor *extractor_left, feature::orb_extractor *extractor_right, bow_vocabulary *bow_vocab,
+          camera::base *camera, const float depth_thr,
+          const cv::Mat &mask = cv::Mat{}, const cv::Mat &img_colored = cv::Mat{});
 
     /**
      * Constructor for RGBD frame
@@ -86,22 +91,22 @@ public:
      * @param depth_thr
      * @param mask
      */
-    frame(const cv::Mat& img_gray, const cv::Mat& img_depth, const double timestamp,
-          feature::orb_extractor* extractor, bow_vocabulary* bow_vocab,
-          camera::base* camera, const float depth_thr,
-          const cv::Mat& mask = cv::Mat{});
+    frame(const cv::Mat &img_gray, const cv::Mat &img_depth, const double timestamp,
+          feature::orb_extractor *extractor, bow_vocabulary *bow_vocab,
+          camera::base *camera, const float depth_thr,
+          const cv::Mat &mask = cv::Mat{}, const cv::Mat &img_colored = cv::Mat{});
 
     /**
      * Set camera pose and refresh rotation and translation
      * @param cam_pose_cw
      */
-    void set_cam_pose(const Mat44_t& cam_pose_cw);
+    void set_cam_pose(const Mat44_t &cam_pose_cw);
 
     /**
      * Set camera pose and refresh rotation and translation
      * @param cam_pose_cw
      */
-    void set_cam_pose(const g2o::SE3Quat& cam_pose_cw);
+    void set_cam_pose(const g2o::SE3Quat &cam_pose_cw);
 
     /**
      * Update rotation and translation using cam_pose_cw_
@@ -133,8 +138,8 @@ public:
     /**
      * Check observability of the landmark
      */
-    bool can_observe(landmark* lm, const float ray_cos_thr,
-                     Vec2_t& reproj, float& x_right, unsigned int& pred_scale_level) const;
+    bool can_observe(landmark *lm, const float ray_cos_thr,
+                     Vec2_t &reproj, float &x_right, unsigned int &pred_scale_level) const;
 
     /**
      * Get keypoint indices in the cell which reference point is located
@@ -161,20 +166,20 @@ public:
     static std::atomic<unsigned int> next_id_;
 
     //! BoW vocabulary (DBoW2 or FBoW)
-    bow_vocabulary* bow_vocab_ = nullptr;
+    bow_vocabulary *bow_vocab_ = nullptr;
 
     // ORB extractor
     //! ORB extractor for monocular or stereo left image
-    feature::orb_extractor* extractor_ = nullptr;
+    feature::orb_extractor *extractor_ = nullptr;
     //! ORB extractor for stereo right image
-    feature::orb_extractor* extractor_right_ = nullptr;
+    feature::orb_extractor *extractor_right_ = nullptr;
 
     //! timestamp
     // TODO: timestamp_tを作る
     double timestamp_;
 
     //! camera model
-    camera::base* camera_ = nullptr;
+    camera::base *camera_ = nullptr;
 
     // この点より遠い点は無効にする
     //! depth threshold
@@ -214,7 +219,7 @@ public:
     cv::Mat descriptors_right_;
 
     //! landmarks, whose nullptr indicates no-association
-    std::vector<landmark*> landmarks_;
+    std::vector<landmark *> landmarks_;
 
     //! outlier flags, which are mainly used in pose optimization and bundle adjustment
     std::vector<bool> outlier_flags_;
@@ -227,7 +232,7 @@ public:
     Mat44_t cam_pose_cw_;
 
     //! reference keyframe for tracking
-    keyframe* ref_keyfrm_ = nullptr;
+    keyframe *ref_keyfrm_ = nullptr;
 
     // ORB scale pyramid information
     //! number of scale levels
@@ -244,10 +249,16 @@ public:
     std::vector<float> level_sigma_sq_;
     //! list of 1 / sigma^2 for optimization
     std::vector<float> inv_level_sigma_sq_;
+    // store the bgr colors at a specific keypoint
+    cv::Vec3b bgr_colors;
 
 private:
     //! enumeration to control the behavior of extract_orb()
-    enum class image_side { Left, Right };
+    enum class image_side
+    {
+        Left,
+        Right
+    };
 
     /**
      * Extract ORB feature according to img_size
@@ -255,13 +266,13 @@ private:
      * @param mask
      * @param img_side
      */
-    void extract_orb(const cv::Mat& img, const cv::Mat& mask, const image_side& img_side = image_side::Left);
+    void extract_orb(const cv::Mat &img, const cv::Mat &mask, const image_side &img_side = image_side::Left);
 
     /**
      * Compute disparities from depth information in depthmap
      * @param right_img_depth
      */
-    void compute_stereo_from_depth(const cv::Mat& right_img_depth);
+    void compute_stereo_from_depth(const cv::Mat &right_img_depth);
 
     // カメラ姿勢
     //! rotation: world -> camera
