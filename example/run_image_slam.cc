@@ -9,7 +9,11 @@
 #include <openvslam/system.h>
 #include <openvslam/config.h>
 
+#include <bits/stdc++.h>
 #include <iostream>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include <chrono>
 #include <numeric>
 #include <opencv2/core/core.hpp>
@@ -31,8 +35,8 @@ void mono_tracking(const std::shared_ptr<openvslam::config> &cfg,
     // load the mask image
     const cv::Mat mask = mask_img_path.empty() ? cv::Mat{} : cv::imread(mask_img_path, cv::IMREAD_GRAYSCALE);
 
-    image_sequence sequence(image_dir_path);
-    const auto img_paths = sequence.get_image_paths();
+    // create a directory for the images
+    mkdir(image_dir_path.c_str(), 0777);
 
     // build a SLAM system
     openvslam::system SLAM(cfg, vocab_file_path);
@@ -46,11 +50,15 @@ void mono_tracking(const std::shared_ptr<openvslam::config> &cfg,
 #endif
 
     std::vector<double> track_times;
-    track_times.reserve(img_paths.size());
+    // track_times.reserve(img_paths.size());
 
     double timestamp = 0.0;
 
     // run the SLAM in another thread
+    std::string output_str = "output_%07d.jpg";
+    char image_path[image_dir_path.size() + output_str.size() + 1];
+    (image_dir_path + "output_%07d.jpg").copy(image_path, image_dir_path.size() + output_str.size() + 1);
+    image_path[image_dir_path.size() + output_str.size()] = '\0';
     std::thread thread([&]() {
         unsigned int i = 1;
         // for (unsigned int i = 0; i < img_paths.size(); ++i) {
@@ -58,7 +66,7 @@ void mono_tracking(const std::shared_ptr<openvslam::config> &cfg,
         { // bad solution for now?
             // const auto& img_path = img_paths.at(i);
             char buffer[30];
-            sprintf(buffer, "images/output_%07d.jpg", i);
+            sprintf(buffer, image_path, i);
             // const auto img_path(buffer);
             const auto img = cv::imread(buffer, cv::IMREAD_UNCHANGED);
             // const auto img = cv::imread(buffer, 1);
