@@ -20,8 +20,8 @@ publisher::publisher(const std::shared_ptr<openvslam::config> &cfg, openvslam::s
                      const std::shared_ptr<openvslam::publish::map_publisher> &map_publisher)
     : system_(system),
       emitting_interval_(cfg->yaml_node_["Socket.emitting_interval"].as<unsigned int>(15000)),
-      image_quality_(cfg->yaml_node_["Socket.image_quality"].as<unsigned int>(20)),
-      client_(new socket_client(cfg->yaml_node_["Socket.server_uri"].as<std::string>("http://127.0.0.1:3000")))
+      image_quality_(cfg->yaml_node_["Socket.image_quality"].as<unsigned int>(20))
+//   client_(new socket_client(cfg->yaml_node_["Socket.server_uri"].as<std::string>("http://127.0.0.1:3000")))
 {
 
     const auto camera = cfg->camera_;
@@ -29,7 +29,7 @@ publisher::publisher(const std::shared_ptr<openvslam::config> &cfg, openvslam::s
     const auto img_rows = (camera->rows_ < 1) ? 480 : camera->rows_;
     data_serializer_ = std::unique_ptr<data_serializer>(new data_serializer(frame_publisher, map_publisher, img_cols, img_rows));
 
-    client_->set_signal_callback(std::bind(&publisher::callback, this, std::placeholders::_1));
+    // client_->set_signal_callback(std::bind(&publisher::callback, this, std::placeholders::_1));
 }
 
 void error(const char *msg)
@@ -70,9 +70,8 @@ void publisher::run()
     is_terminated_ = false;
     is_paused_ = false;
 
-    const auto serialized_reset_signal = data_serializer::serialized_reset_signal_;
-    client_->emit("map_publish", serialized_reset_signal);
-    unsigned int i = 0;
+    // const auto serialized_reset_signal = data_serializer::serialized_reset_signal_;
+    // client_->emit("map_publish", serialized_reset_signal);
     while (true)
     {
         const auto t0 = std::chrono::system_clock::now();
@@ -80,15 +79,15 @@ void publisher::run()
         const auto serialized_map_data = data_serializer_->serialize_map_diff();
         if (!serialized_map_data.empty())
         {
-            client_->emit("map_publish", serialized_map_data);
+            // client_->emit("map_publish", serialized_map_data);
             write_to_rust(sockfd, serialized_map_data);
         }
 
         const auto serialized_frame_data = data_serializer_->serialize_latest_frame(image_quality_);
-        if (!serialized_frame_data.empty())
-        {
-            client_->emit("image_publish", serialized_frame_data);
-        }
+        // if (!serialized_frame_data.empty())
+        // {
+        //     client_->emit("image_publish", serialized_frame_data);
+        // }
 
         // sleep until emitting interval time is past
         const auto t1 = std::chrono::system_clock::now();

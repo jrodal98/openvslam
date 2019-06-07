@@ -219,8 +219,6 @@ std::string data_serializer::serialize_as_protobuf(const std::vector<openvslam::
         }
         for (int i = 2; i > -1; i--)
         {
-
-            // landmark_obj->add_color(rgb[i]);
             landmark_obj->add_color(bgr.val[i]);
         }
     }
