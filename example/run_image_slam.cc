@@ -70,6 +70,7 @@ void mono_tracking(const std::shared_ptr<openvslam::config> &cfg,
                 bool all_read = false;
                 while (previous_num != i || !all_read)
                 {
+                    previous_num = i;
                     std::cout << i << std::endl;
                     char buffer[22]; // handles up to 99 separate connections. 23 bytes would allow 999 connections and so on.
                     sprintf(buffer, im_path.c_str(), i);
