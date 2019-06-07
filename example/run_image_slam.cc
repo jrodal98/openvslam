@@ -9,11 +9,7 @@
 #include <openvslam/system.h>
 #include <openvslam/config.h>
 
-#include <bits/stdc++.h>
-#include <iostream>
-#include <sys/stat.h>
-#include <sys/types.h>
-
+#include <sys/stat.h> // for checking if a file exists
 #include <chrono>
 #include <numeric>
 #include <opencv2/core/core.hpp>
@@ -36,7 +32,7 @@ void mono_tracking(const std::shared_ptr<openvslam::config> &cfg,
     const cv::Mat mask = mask_img_path.empty() ? cv::Mat{} : cv::imread(mask_img_path, cv::IMREAD_GRAYSCALE);
 
     // create a directory for the images
-    mkdir(image_dir_path.c_str(), 0777);
+    // mkdir(image_dir_path.c_str(), 0777);
 
     // build a SLAM system
     openvslam::system SLAM(cfg, vocab_file_path);
@@ -55,52 +51,72 @@ void mono_tracking(const std::shared_ptr<openvslam::config> &cfg,
     double timestamp = 0.0;
 
     // run the SLAM in another thread
-    std::string output_str = "output_%07d.jpg";
-    char image_path[image_dir_path.size() + output_str.size() + 1];
-    (image_dir_path + "output_%07d.jpg").copy(image_path, image_dir_path.size() + output_str.size() + 1);
-    image_path[image_dir_path.size() + output_str.size()] = '\0';
+    std::mutex queue_lock;
+    std::queue<std::string> im_queue;
+
     std::thread thread([&]() {
-        unsigned int i = 1;
-        // for (unsigned int i = 0; i < img_paths.size(); ++i) {
+        unsigned int cur_dir = 0;
         while (true)
         { // bad solution for now?
-            // const auto& img_path = img_paths.at(i);
-            char buffer[30];
-            sprintf(buffer, image_path, i);
-            // const auto img_path(buffer);
-            const auto img = cv::imread(buffer, cv::IMREAD_UNCHANGED);
-            // const auto img = cv::imread(buffer, 1);
-
-            const auto tp_1 = std::chrono::steady_clock::now();
-
-            if (!img.empty() && (i++ % frame_skip == 0))
+            queue_lock.lock();
+            if (!im_queue.empty())
             {
-                // input the current frame and estimate the camera pose
-                // i++;
-                SLAM.track_for_monocular(img, timestamp, mask);
-                // std::cout << i << '\n';
-            }
-
-            const auto tp_2 = std::chrono::steady_clock::now();
-
-            const auto track_time = std::chrono::duration_cast<std::chrono::duration<double>>(tp_2 - tp_1).count();
-            if (i % frame_skip == 0)
-            {
-                track_times.push_back(track_time);
-            }
-
-            // wait until the timestamp of the next frame
-            if (!no_sleep)
-            {
-                const auto wait_time = 1.0 / cfg->camera_->fps_ - track_time;
-                if (0.0 < wait_time)
+                auto im_path = im_queue.front();
+                im_queue.pop();
+                queue_lock.unlock();
+                auto done_string = ("img" + std::to_string(cur_dir) + "/done.txt");
+                unsigned int i = 1;
+                unsigned int previous_num = 0;
+                bool all_read = false;
+                while (previous_num != i || !all_read)
                 {
-                    std::this_thread::sleep_for(std::chrono::microseconds(static_cast<unsigned int>(wait_time * 1e6)));
+                    std::cout << i << std::endl;
+                    char buffer[22]; // handles up to 99 separate connections. 23 bytes would allow 999 connections and so on.
+                    sprintf(buffer, im_path.c_str(), i);
+                    // const auto img_path(buffer);
+                    const auto img = cv::imread(buffer, cv::IMREAD_UNCHANGED);
+                    // const auto img = cv::imread(buffer, 1);
+
+                    const auto tp_1 = std::chrono::steady_clock::now();
+
+                    struct stat file_buffer;
+                    if (!all_read && stat(done_string.c_str(), &file_buffer) == 0)
+                    {
+                        std::cout << "This dir is done reading." << std::endl;
+                        all_read = true;
+                    }
+
+                    if (!img.empty() && (i++ % frame_skip == 0))
+                    {
+                        // input the current frame and estimate the camera pose
+                        SLAM.track_for_monocular(img, timestamp, mask);
+                    }
+
+                    const auto tp_2 = std::chrono::steady_clock::now();
+
+                    const auto track_time = std::chrono::duration_cast<std::chrono::duration<double>>(tp_2 - tp_1).count();
+                    if (i % frame_skip == 0)
+                    {
+                        track_times.push_back(track_time);
+                    }
+
+                    // wait until the timestamp of the next frame
+                    if (!no_sleep)
+                    {
+                        const auto wait_time = 1.0 / cfg->camera_->fps_ - track_time;
+                        if (0.0 < wait_time)
+                        {
+                            std::this_thread::sleep_for(std::chrono::microseconds(static_cast<unsigned int>(wait_time * 1e6)));
+                        }
+                    }
+
+                    timestamp += 1.0 / cfg->camera_->fps_;
                 }
             }
-
-            timestamp += 1.0 / cfg->camera_->fps_;
-
+            else
+            {
+                queue_lock.unlock();
+            }
             // check if the termination of SLAM system is requested or not
             if (SLAM.terminate_is_requested())
             {
@@ -128,6 +144,19 @@ void mono_tracking(const std::shared_ptr<openvslam::config> &cfg,
 #endif
     });
 
+    std::thread incoming_dirs([&]() {
+        while (true)
+        {
+            std::string dir;
+            std::cin >> dir;
+            std::cout << "orbslam: recieved dir " << dir << std::endl;
+            auto image_path = (dir + "out_%07d.jpg");
+            queue_lock.lock();
+            im_queue.push(image_path);
+            queue_lock.unlock();
+        }
+    });
+
     // run the viewer in the current thread
 #ifdef USE_PANGOLIN_VIEWER
     viewer.run();
@@ -136,6 +165,7 @@ void mono_tracking(const std::shared_ptr<openvslam::config> &cfg,
 #endif
 
     thread.join();
+    incoming_dirs.join();
     // shutdown the SLAM process
     SLAM.shutdown();
 
