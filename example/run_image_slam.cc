@@ -15,6 +15,9 @@
 #include <opencv2/core/core.hpp>
 #include <spdlog/spdlog.h>
 #include <popl.hpp>
+
+#include <opencv2/videoio.hpp> // for VideoCapture
+
 #ifdef USE_STACK_TRACE_LOGGER
 #include <glog/logging.h>
 #endif
@@ -30,9 +33,6 @@ void mono_tracking(const std::shared_ptr<openvslam::config> &cfg,
 {
     // load the mask image
     const cv::Mat mask = mask_img_path.empty() ? cv::Mat{} : cv::imread(mask_img_path, cv::IMREAD_GRAYSCALE);
-
-    // create a directory for the images
-    // mkdir(image_dir_path.c_str(), 0777);
 
     // build a SLAM system
     openvslam::system SLAM(cfg, vocab_file_path);
@@ -52,40 +52,34 @@ void mono_tracking(const std::shared_ptr<openvslam::config> &cfg,
 
     // run the SLAM in another thread
     std::mutex queue_lock;
-    std::queue<std::string> im_queue;
-
+    std::queue<std::string> pipes;
+    bool done_listening = false;
     std::thread thread([&]() {
-        unsigned int cur_dir = 0;
-        while (true)
-        { // bad solution for now?
+        while (!done_listening)
+        {
             queue_lock.lock();
-            if (!im_queue.empty())
+            if (!pipes.empty())
             {
-                auto im_path = im_queue.front();
-                im_queue.pop();
+                std::string in_pipe = pipes.front();
+                pipes.pop();
                 queue_lock.unlock();
-                auto done_string = ("img" + std::to_string(cur_dir) + "/done.txt");
+                if (in_pipe == "quit")
+                {
+                    done_listening = true;
+                    break;
+                }
                 unsigned int i = 1;
                 unsigned int previous_num = 0;
                 bool all_read = false;
-                while (previous_num != i || !all_read)
+                cv::Mat img;
+                cv::VideoCapture capture(in_pipe);
+                while (previous_num != i || i < 2)
                 {
                     previous_num = i;
                     std::cout << i << std::endl;
-                    char buffer[22]; // handles up to 99 separate connections. 23 bytes would allow 999 connections and so on.
-                    sprintf(buffer, im_path.c_str(), i);
-                    // const auto img_path(buffer);
-                    const auto img = cv::imread(buffer, cv::IMREAD_UNCHANGED);
-                    // const auto img = cv::imread(buffer, 1);
+                    capture.read(img);
 
                     const auto tp_1 = std::chrono::steady_clock::now();
-
-                    struct stat file_buffer;
-                    if (!all_read && stat(done_string.c_str(), &file_buffer) == 0)
-                    {
-                        std::cout << "This dir is done reading." << std::endl;
-                        all_read = true;
-                    }
 
                     if (!img.empty() && (i++ % frame_skip == 0))
                     {
@@ -145,15 +139,25 @@ void mono_tracking(const std::shared_ptr<openvslam::config> &cfg,
 #endif
     });
 
-    std::thread incoming_dirs([&]() {
-        while (true)
+    std::thread incoming_pipe([&]() {
+        bool done = false;
+        while (!done)
         {
-            std::string dir;
-            std::cin >> dir;
-            std::cout << "orbslam: recieved dir " << dir << std::endl;
-            auto image_path = (dir + "out_%07d.jpg");
+            std::string in_pipe;
+            std::cin >> in_pipe;
+            if (in_pipe == "quit")
+            {
+                done = true;
+                publisher.request_terminate();
+                std::cout << "recieved quit signal" << std::endl;
+            }
+            else
+            {
+
+                std::cout << "orbslam: recieved pipe " << in_pipe << std::endl;
+            }
             queue_lock.lock();
-            im_queue.push(image_path);
+            pipes.push(in_pipe);
             queue_lock.unlock();
         }
     });
@@ -166,7 +170,7 @@ void mono_tracking(const std::shared_ptr<openvslam::config> &cfg,
 #endif
 
     thread.join();
-    incoming_dirs.join();
+    incoming_pipe.join();
     // shutdown the SLAM process
     SLAM.shutdown();
 
