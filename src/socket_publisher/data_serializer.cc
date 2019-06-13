@@ -190,7 +190,8 @@ std::string data_serializer::serialize_as_protobuf(const std::vector<openvslam::
     std::unordered_map<unsigned int, double> next_point_hash_map;
     for (const auto landmark : all_landmarks)
     {
-
+        if (landmark->num_observations() < 3)
+            continue;
         const auto id = landmark->id_;
         const auto pos = landmark->get_pos_in_world();
         const auto zip = get_vec_hash(pos);
