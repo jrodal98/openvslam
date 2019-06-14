@@ -59,6 +59,16 @@ else()
     message(STATUS "Google Perftools: DISABLED")
 endif()
 
+set(USE_SSE_ORB OFF CACHE BOOL "Enable SSE in ORB extraction")
+
+if(USE_SSE_ORB)
+    message(STATUS "SSE for ORB extraction: ENABLED")
+    add_definitions(-DUSE_SSE_ORB)
+else()
+    message(STATUS "SSE for ORB extraction: DISABLED")
+    remove_definitions(-DUSE_SSE_ORB)
+endif()
+
 ########################
 # Set compiler options #
 ########################
@@ -137,11 +147,11 @@ else()
 endif()
 
 # OpenCV
-find_package(OpenCV 3.4 QUIET)
+find_package(OpenCV 3.3.1 QUIET)
 if(NOT OpenCV_FOUND)
     find_package(OpenCV 4.0)
     if(NOT OpenCV_FOUND)
-        message(FATAL_ERROR "OpenCV > 3.4.0 not found")
+        message(FATAL_ERROR "OpenCV > 3.3.1 not found")
     endif()
 endif()
 message(STATUS "Use OpenCV ${OpenCV_VERSION}")

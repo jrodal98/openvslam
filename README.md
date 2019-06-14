@@ -1,7 +1,7 @@
 # OpenVSLAM: a Versatile Visual SLAM Framework
 [![Wercker Status](https://app.wercker.com/status/8b02a43f48216385658bb3857aae5fd8/s/)](https://app.wercker.com/project/byKey/8b02a43f48216385658bb3857aae5fd8)
 [![Documentation Status](https://readthedocs.org/projects/openvslam/badge/?version=master)](https://openvslam.readthedocs.io/en/master/?badge=master)
-[![Docker Build Status](https://img.shields.io/docker/cloud/build/shinsumicco/openvslam-desktop.svg)](https://hub.docker.com/r/shinsumicco/openvslam-desktop)
+[![Docker Build Status](https://img.shields.io/docker/cloud/build/shinsumicco/openvslam.svg)](https://hub.docker.com/r/shinsumicco/openvslam)
 
 ## Overview
 
@@ -73,12 +73,16 @@ Feedbacks, feature requests, and contribution are welcome!
 
 The following files are derived from third-party libraries.
 
-- `./3rd/json` : part of [nlohmann/json \[v3.6.1\]](https://github.com/nlohmann/json) (MIT license)
-- `./3rd/popl` : part of [badaix/popl \[v1.2.0\]](https://github.com/badaix/popl) (MIT license)
-- `./3rd/spdlog` : part of [gabime/spdlog \[v1.3.1\]](https://github.com/gabime/spdlog) (MIT license)
+- `./3rd/json` : [nlohmann/json \[v3.6.1\]](https://github.com/nlohmann/json) (MIT license)
+- `./3rd/popl` : [badaix/popl \[v1.2.0\]](https://github.com/badaix/popl) (MIT license)
+- `./3rd/spdlog` : [gabime/spdlog \[v1.3.1\]](https://github.com/gabime/spdlog) (MIT license)
 - `./src/openvslam/solver/pnp_solver.cc` : part of [laurentkneip/opengv](https://github.com/laurentkneip/opengv) (3-clause BSD license)
 - `./src/openvslam/feature/orb_extractor.cc` : part of [opencv/opencv](https://github.com/opencv/opencv) (3-clause BSD License)
 - `./src/openvslam/feature/orb_point_pairs.h` : part of [opencv/opencv](https://github.com/opencv/opencv) (3-clause BSD License)
+- `./viewer/public/js/lib/dat.gui.min.js` : [dataarts/dat.gui](https://github.com/dataarts/dat.gui) (Apache License 2.0)
+- `./viewer/public/js/lib/protobuf.min.js` : [protobufjs/protobuf.js](https://github.com/protobufjs/protobuf.js) (3-clause BSD License)
+- `./viewer/public/js/lib/stats.min.js` : [mrdoob/stats.js](https://github.com/mrdoob/stats.js) (MIT license)
+- `./viewer/public/js/lib/three.min.js` : [mrdoob/three.js](https://github.com/mrdoob/three.js) (MIT license)
 
 Please use `g2o` as the dynamic link library because `csparse_extension` module of `g2o` is LGPLv3+.
 
