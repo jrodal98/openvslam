@@ -7,6 +7,10 @@ Simple Tutorial
 TL; DR
 ^^^^^^
 
+.. NOTE ::
+
+  If you use :ref:`SocketViewer <subsection-dependencies-socketviewer>`, please launch the server in the other terminal and access to it with the web browser **in advance**.
+
 Running the following commands will give a feel for what OpenVSLAM can do.
 The later parts of this chapter explains what each of the commands do in more detail.
 
@@ -16,7 +20,7 @@ The later parts of this chapter explains what each of the commands do in more de
     $ pwd
     /path/to/openvslam/build/
     $ ls
-    run_euroc_slam   lib/   ...
+    run_video_slam   run_video_localization   lib/   ...
 
     # download an ORB vocabulary from Google Drive
     FILE_ID="1wUPb328th8bUqhOk-i8xllt5mgRW4n84"
@@ -40,12 +44,12 @@ The later parts of this chapter explains what each of the commands do in more de
     unzip aist_living_lab_2.zip
 
     # run tracking and mapping
-    ./run_video_slam -v ./orb_vocab/orb_vocab.dbow2 -m ./aist_living_lab_1/movie.mp4 -s ./aist_living_lab_1/config.yaml --frame-skip 3 --no-sleep --map-db map.msg
+    ./run_video_slam -v ./orb_vocab/orb_vocab.dbow2 -m ./aist_living_lab_1/video.mp4 -c ./aist_living_lab_1/config.yaml --frame-skip 3 --no-sleep --map-db map.msg
     # click the [Terminate] button to close the viewer
     # you can find map.msg in the current directory
 
     # run localization
-    ./run_video_localization -v ./orb_vocab/orb_vocab.dbow2 -m ./aist_living_lab_2/movie.mp4 -s ./aist_living_lab_2/config.yaml --frame-skip 3 --no-sleep --map-db map.msg
+    ./run_video_localization -v ./orb_vocab/orb_vocab.dbow2 -m ./aist_living_lab_2/video.mp4 -c ./aist_living_lab_2/config.yaml --frame-skip 3 --no-sleep --map-db map.msg
 
 
 Sample Datasets
@@ -56,6 +60,8 @@ If you want to run OpenVSLAM with standard benchmarking detasets, please see :re
 
 Start by downloading some datasets you like.
 
+Equirectangular Datasets
+````````````````````````
 
 .. list-table::
     :header-rows: 1
@@ -122,6 +128,58 @@ Start by downloading some datasets you like.
       - 1:18
       - `link <https://drive.google.com/open?id=1A_gq8LYuENePhNHsuscLZQPhbJJwzAq4>`__
 
+Fisheye Datasets
+````````````````
+
+.. list-table::
+    :header-rows: 1
+    :widths: 8, 8, 2, 8
+
+    * - name
+      - camera model
+      - length
+      - download link
+    * - aist_entrance_hall_1
+      - fisheye (mono)
+      - 1:05
+      - `link <https://drive.google.com/open?id=1SVDsgz-ydm1pAbrdmhRQTmWhJnUl_xr8>`__
+    * - aist_entrance_hall_2
+      - fisheye (mono)
+      - 1:06
+      - `link <https://drive.google.com/open?id=1SVDsgz-ydm1pAbrdmhRQTmWhJnUl_xr8>`__
+    * - aist_entrance_hall_3
+      - fisheye (mono)
+      - 1:23
+      - `link <https://drive.google.com/open?id=1SVDsgz-ydm1pAbrdmhRQTmWhJnUl_xr8>`__
+    * - aist_entrance_hall_4
+      - fisheye (mono)
+      - 1:27
+      - `link <https://drive.google.com/open?id=1SVDsgz-ydm1pAbrdmhRQTmWhJnUl_xr8>`__
+    * - aist_living_lab_1
+      - fisheye (mono)
+      - 1:20
+      - `link <https://drive.google.com/open?id=1SVDsgz-ydm1pAbrdmhRQTmWhJnUl_xr8>`__
+    * - aist_living_lab_2
+      - fisheye (mono)
+      - 2:26
+      - `link <https://drive.google.com/open?id=1SVDsgz-ydm1pAbrdmhRQTmWhJnUl_xr8>`__
+    * - aist_living_lab_3
+      - fisheye (mono)
+      - 3:43
+      - `link <https://drive.google.com/open?id=1SVDsgz-ydm1pAbrdmhRQTmWhJnUl_xr8>`__
+    * - nu_eng2_corridor_1
+      - fisheye (mono)
+      - 2:56
+      - `link <https://drive.google.com/open?id=1SVDsgz-ydm1pAbrdmhRQTmWhJnUl_xr8>`__
+    * - nu_eng2_corridor_2
+      - fisheye (mono)
+      - 2:45
+      - `link <https://drive.google.com/open?id=1SVDsgz-ydm1pAbrdmhRQTmWhJnUl_xr8>`__
+    * - nu_eng2_corridor_3
+      - fisheye (mono)
+      - 2:04
+      - `link <https://drive.google.com/open?id=1SVDsgz-ydm1pAbrdmhRQTmWhJnUl_xr8>`__
+
 
 After downloading and uncompressing a zip file, you will find a video file and a config file under the uncompressed directory.
 
@@ -129,7 +187,7 @@ After downloading and uncompressing a zip file, you will find a video file and a
 .. code-block:: bash
 
     $ ls dataset_name_X/
-    config.yaml  movie.mp4
+    config.yaml  video.mp4
 
 
 You can put the dataset in any directory where you have access to.
@@ -159,14 +217,14 @@ You can use ``./run_video_slam`` to run SLAM with the video file.
       -h, --help             produce help message
       -v, --vocab arg        vocabulary file path
       -m, --video arg        video file path
-      -s, --setting arg      setting file path
+      -c, --config arg       config file path
       --mask arg             mask image path
       --frame-skip arg (=1)  interval of frame skip
       --no-sleep             not wait for next frame in real time
       --auto-term            automatically terminate the viewer
       --debug                debug mode
       --eval-log             store trajectory and tracking times for evaluation
-      --map-db arg           store a map database at this path after SLAM
+      -p, --map-db arg       store a map database at this path after SLAM
 
 
 Execute the following command to run SLAM.
@@ -177,8 +235,8 @@ The paths should be changed accordingly.
 
     $ ./run_video_slam \
         -v /path/to/orb_vocab/orb_vocab.dbow2 \
-        -s /path/to/aist_living_lab_1/config.yaml \
-        -m /path/to/aist_living_lab_1/movie.mp4 \
+        -c /path/to/aist_living_lab_1/config.yaml \
+        -m /path/to/aist_living_lab_1/video.mp4 \
         --frame-skip 3 \
         --map-db aist_living_lab_1_map.msg
 
@@ -299,8 +357,8 @@ You can use ``./run_video_localization`` to run localization.
       -h, --help             produce help message
       -v, --vocab arg        vocabulary file path
       -m, --video arg        video file path
-      -s, --setting arg      setting file path
-      -d, --map-db arg       path to a prebuilt map database
+      -c, --config arg       config file path
+      -p, --map-db arg       path to a prebuilt map database
       --mapping              perform mapping as well as localization
       --mask arg             mask image path
       --frame-skip arg (=1)  interval of frame skip
@@ -317,8 +375,8 @@ The paths should be changed accordingly.
 
     $ ./run_video_localization \
         -v /path/to/orb_vocab/orb_vocab.dbow2 \
-        -s /path/to/aist_living_lab_2/config.yaml \
-        -m /path/to/aist_living_lab_2/movie.mp4 \
+        -c /path/to/aist_living_lab_2/config.yaml \
+        -m /path/to/aist_living_lab_2/video.mp4 \
         --frame-skip 3 \
         --map-db aist_living_lab_1_map.msg
 
