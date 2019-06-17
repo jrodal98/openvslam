@@ -39,27 +39,36 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <opencv2/opencv.hpp>
 
-namespace openvslam {
-namespace feature {
+namespace openvslam
+{
+namespace feature
+{
 
 orb_extractor::orb_extractor(const unsigned int max_num_keypts, const float scale_factor, const unsigned int num_levels,
                              const unsigned int ini_fast_thr, const unsigned int min_fast_thr,
-                             const std::vector<std::vector<float>>& mask_rects)
-        : orb_extractor(orb_params{max_num_keypts, scale_factor, num_levels,
-                                   ini_fast_thr, min_fast_thr,
-                                   mask_rects}) {}
+                             const std::vector<std::vector<float>> &mask_rects)
+    : orb_extractor(orb_params{max_num_keypts, scale_factor, num_levels,
+                               ini_fast_thr, min_fast_thr,
+                               mask_rects}) {}
 
-orb_extractor::orb_extractor(const orb_params& orb_params)
-        : orb_params_(orb_params) {
+orb_extractor::orb_extractor(const orb_params &orb_params)
+    : orb_params_(orb_params)
+{
     // create ORB point pairs
     create_point_pairs();
     // initialize parameters
     initialize();
 }
 
-void orb_extractor::extract(const cv::_InputArray& in_image, const cv::_InputArray& in_image_mask,
-                            std::vector<cv::KeyPoint>& keypts, const cv::_OutputArray& out_descriptors) {
-    if (in_image.empty()) {
+void orb_extractor::extract(const cv::_InputArray &in_image, const cv::_InputArray &in_image_mask,
+                            std::vector<cv::KeyPoint> &keypts, const cv::_OutputArray &out_descriptors)
+{
+
+    auto akaze = cv::AKAZE::create();
+    akaze->detectAndCompute(in_image, in_image_mask, keypts, out_descriptors);
+    return;
+    if (in_image.empty())
+    {
         return;
     }
 
@@ -71,7 +80,8 @@ void orb_extractor::extract(const cv::_InputArray& in_image, const cv::_InputArr
     compute_image_pyramid(image);
 
     // mask initialization
-    if (!mask_is_initialized_ && !orb_params_.mask_rects_.empty()) {
+    if (!mask_is_initialized_ && !orb_params_.mask_rects_.empty())
+    {
         create_rectangle_mask(image.cols, image.rows);
         mask_is_initialized_ = true;
     }
@@ -79,18 +89,21 @@ void orb_extractor::extract(const cv::_InputArray& in_image, const cv::_InputArr
     std::vector<std::vector<cv::KeyPoint>> all_keypts;
 
     // select mask to use
-    if (!in_image_mask.empty()) {
+    if (!in_image_mask.empty())
+    {
         // image_maskが有効であればそちらを使う
         const auto image_mask = in_image_mask.getMat();
         assert(image_mask.type() == CV_8UC1);
         compute_fast_keypoints(all_keypts, image_mask);
     }
-    else if (!rect_mask_.empty()){
+    else if (!rect_mask_.empty())
+    {
         // image_maskが無効かつrectangle maskが有効であればrectangle maskを使う
         assert(rect_mask_.type() == CV_8UC1);
         compute_fast_keypoints(all_keypts, rect_mask_);
     }
-    else {
+    else
+    {
         // いずれのmaskも無効であれば使わない
         compute_fast_keypoints(all_keypts, cv::Mat());
     }
@@ -98,13 +111,16 @@ void orb_extractor::extract(const cv::_InputArray& in_image, const cv::_InputArr
     cv::Mat descriptors;
 
     unsigned int num_keypts = 0;
-    for (unsigned int level = 0; level < orb_params_.num_levels_; ++level) {
+    for (unsigned int level = 0; level < orb_params_.num_levels_; ++level)
+    {
         num_keypts += all_keypts.at(level).size();
     }
-    if (num_keypts == 0) {
+    if (num_keypts == 0)
+    {
         out_descriptors.release();
     }
-    else {
+    else
+    {
         out_descriptors.create(num_keypts, 32, CV_8U);
         descriptors = out_descriptors.getMat();
     }
@@ -113,11 +129,13 @@ void orb_extractor::extract(const cv::_InputArray& in_image, const cv::_InputArr
     keypts.reserve(num_keypts);
 
     unsigned int offset = 0;
-    for (unsigned int level = 0; level < orb_params_.num_levels_; ++level) {
-        auto& keypts_at_level = all_keypts.at(level);
+    for (unsigned int level = 0; level < orb_params_.num_levels_; ++level)
+    {
+        auto &keypts_at_level = all_keypts.at(level);
         const auto num_keypts_at_level = keypts_at_level.size();
 
-        if (num_keypts_at_level == 0) {
+        if (num_keypts_at_level == 0)
+        {
             continue;
         }
 
@@ -135,72 +153,88 @@ void orb_extractor::extract(const cv::_InputArray& in_image, const cv::_InputArr
     }
 }
 
-unsigned int orb_extractor::get_max_num_keypoints() const {
+unsigned int orb_extractor::get_max_num_keypoints() const
+{
     return orb_params_.max_num_keypts_;
 }
 
-void orb_extractor::set_max_num_keypoints(const unsigned int max_num_keypts) {
+void orb_extractor::set_max_num_keypoints(const unsigned int max_num_keypts)
+{
     orb_params_.max_num_keypts_ = max_num_keypts;
     initialize();
 }
 
-float orb_extractor::get_scale_factor() const {
+float orb_extractor::get_scale_factor() const
+{
     return orb_params_.scale_factor_;
 }
 
-void orb_extractor::set_scale_factor(const float scale_factor) {
+void orb_extractor::set_scale_factor(const float scale_factor)
+{
     orb_params_.scale_factor_ = scale_factor;
     initialize();
 }
 
-unsigned int orb_extractor::get_num_scale_levels() const {
+unsigned int orb_extractor::get_num_scale_levels() const
+{
     return orb_params_.num_levels_;
 }
 
-void orb_extractor::set_num_scale_levels(const unsigned int num_levels) {
+void orb_extractor::set_num_scale_levels(const unsigned int num_levels)
+{
     orb_params_.num_levels_ = num_levels;
     initialize();
 }
 
-unsigned int orb_extractor::get_initial_fast_threshold() const {
+unsigned int orb_extractor::get_initial_fast_threshold() const
+{
     return orb_params_.ini_fast_thr_;
 }
 
-void orb_extractor::set_initial_fast_threshold(const unsigned int initial_fast_threshold) {
+void orb_extractor::set_initial_fast_threshold(const unsigned int initial_fast_threshold)
+{
     orb_params_.ini_fast_thr_ = initial_fast_threshold;
 }
 
-unsigned int orb_extractor::get_minimum_fast_threshold() const {
+unsigned int orb_extractor::get_minimum_fast_threshold() const
+{
     return orb_params_.min_fast_thr;
 }
 
-void orb_extractor::set_minimum_fast_threshold(const unsigned int minimum_fast_threshold) {
+void orb_extractor::set_minimum_fast_threshold(const unsigned int minimum_fast_threshold)
+{
     orb_params_.min_fast_thr = minimum_fast_threshold;
 }
 
-std::vector<float> orb_extractor::get_scale_factors() const {
+std::vector<float> orb_extractor::get_scale_factors() const
+{
     return scale_factors_;
 }
 
-std::vector<float> orb_extractor::get_inv_scale_factors() const {
+std::vector<float> orb_extractor::get_inv_scale_factors() const
+{
     return inv_scale_factors_;
 }
 
-std::vector<float> orb_extractor::get_level_sigma_sq() const {
+std::vector<float> orb_extractor::get_level_sigma_sq() const
+{
     return level_sigma_sq_;
 }
 
-std::vector<float> orb_extractor::get_inv_level_sigma_sq() const {
+std::vector<float> orb_extractor::get_inv_level_sigma_sq() const
+{
     return inv_level_sigma_sq_;
 }
 
-void orb_extractor::create_point_pairs() {
+void orb_extractor::create_point_pairs()
+{
     constexpr unsigned int num_sample_pts = 512;
-    auto pattern = reinterpret_cast<const cv::Point*>(orb_point_pairs);
+    auto pattern = reinterpret_cast<const cv::Point *>(orb_point_pairs);
     std::copy(pattern, pattern + num_sample_pts, std::back_inserter(pattern_));
 }
 
-void orb_extractor::initialize() {
+void orb_extractor::initialize()
+{
     // compute scale pyramid information
     calc_scale_factors();
 
@@ -209,11 +243,10 @@ void orb_extractor::initialize() {
     num_keypts_per_level_.resize(orb_params_.num_levels_);
 
     // compute the desired number of keypoints per scale
-    double desired_num_keypts_per_scale
-            = orb_params_.max_num_keypts_ * (1.0 - 1.0 / orb_params_.scale_factor_)
-              / (1.0 - std::pow(1.0 / orb_params_.scale_factor_, static_cast<double>(orb_params_.num_levels_)));
+    double desired_num_keypts_per_scale = orb_params_.max_num_keypts_ * (1.0 - 1.0 / orb_params_.scale_factor_) / (1.0 - std::pow(1.0 / orb_params_.scale_factor_, static_cast<double>(orb_params_.num_levels_)));
     unsigned int total_num_keypts = 0;
-    for (unsigned int level = 0; level < orb_params_.num_levels_ - 1; ++level) {
+    for (unsigned int level = 0; level < orb_params_.num_levels_ - 1; ++level)
+    {
         num_keypts_per_level_.at(level) = std::round(desired_num_keypts_per_scale);
         total_num_keypts += num_keypts_per_level_.at(level);
         desired_num_keypts_per_scale *= 1.0 / orb_params_.scale_factor_;
@@ -224,11 +257,14 @@ void orb_extractor::initialize() {
     u_max_.resize(fast_half_patch_size_ + 1);
     const unsigned int vmax = std::floor(fast_half_patch_size_ * std::sqrt(2.0) / 2 + 1);
     const unsigned int vmin = std::ceil(fast_half_patch_size_ * std::sqrt(2.0) / 2);
-    for (unsigned int v = 0; v <= vmax; ++v) {
+    for (unsigned int v = 0; v <= vmax; ++v)
+    {
         u_max_.at(v) = std::round(std::sqrt(fast_half_patch_size_ * fast_half_patch_size_ - v * v));
     }
-    for (unsigned int v = fast_half_patch_size_, v0 = 0; vmin <= v; --v) {
-        while (u_max_.at(v0) == u_max_.at(v0 + 1)) {
+    for (unsigned int v = fast_half_patch_size_, v0 = 0; vmin <= v; --v)
+    {
+        while (u_max_.at(v0) == u_max_.at(v0 + 1))
+        {
             ++v0;
         }
         u_max_.at(v) = v0;
@@ -236,19 +272,23 @@ void orb_extractor::initialize() {
     }
 }
 
-void orb_extractor::calc_scale_factors() {
+void orb_extractor::calc_scale_factors()
+{
     scale_factors_ = orb_params::calc_scale_factors(orb_params_.num_levels_, orb_params_.scale_factor_);
     inv_scale_factors_ = orb_params::calc_inv_scale_factors(orb_params_.num_levels_, orb_params_.scale_factor_);
     level_sigma_sq_ = orb_params::calc_level_sigma_sq(orb_params_.num_levels_, orb_params_.scale_factor_);
     inv_level_sigma_sq_ = orb_params::calc_inv_level_sigma_sq(orb_params_.num_levels_, orb_params_.scale_factor_);
 }
 
-void orb_extractor::create_rectangle_mask(const unsigned int cols, const unsigned int rows) {
-    if (rect_mask_.empty()) {
+void orb_extractor::create_rectangle_mask(const unsigned int cols, const unsigned int rows)
+{
+    if (rect_mask_.empty())
+    {
         rect_mask_ = cv::Mat(rows, cols, CV_8UC1, cv::Scalar(255));
     }
     // draw masks
-    for (const auto& mask_rect : orb_params_.mask_rects_) {
+    for (const auto &mask_rect : orb_params_.mask_rects_)
+    {
         // draw black rectangle
         const unsigned int x_min = std::round(cols * mask_rect.at(0));
         const unsigned int x_max = std::round(cols * mask_rect.at(1));
@@ -258,9 +298,11 @@ void orb_extractor::create_rectangle_mask(const unsigned int cols, const unsigne
     }
 }
 
-void orb_extractor::compute_image_pyramid(const cv::Mat& image) {
+void orb_extractor::compute_image_pyramid(const cv::Mat &image)
+{
     image_pyramid_.at(0) = image;
-    for (unsigned int level = 1; level < orb_params_.num_levels_; ++level) {
+    for (unsigned int level = 1; level < orb_params_.num_levels_; ++level)
+    {
         // determine the size of an image
         const double scale = scale_factors_.at(level);
         const cv::Size size(std::round(image.cols * 1.0 / scale), std::round(image.rows * 1.0 / scale));
@@ -269,7 +311,8 @@ void orb_extractor::compute_image_pyramid(const cv::Mat& image) {
     }
 }
 
-void orb_extractor::compute_fast_keypoints(std::vector<std::vector<cv::KeyPoint>>& all_keypts, const cv::Mat& mask) const {
+void orb_extractor::compute_fast_keypoints(std::vector<std::vector<cv::KeyPoint>> &all_keypts, const cv::Mat &mask) const
+{
     all_keypts.resize(orb_params_.num_levels_);
 
     // mask(image or rectangle)のチェックをする関数
@@ -283,7 +326,8 @@ void orb_extractor::compute_fast_keypoints(std::vector<std::vector<cv::KeyPoint>
 #ifdef USE_OPENMP
 #pragma omp parallel for
 #endif
-    for (unsigned int level = 0; level < orb_params_.num_levels_; ++level) {
+    for (unsigned int level = 0; level < orb_params_.num_levels_; ++level)
+    {
         const float scale_factor = scale_factors_.at(level);
 
         constexpr unsigned int min_border_x = orb_patch_radius_;
@@ -303,33 +347,40 @@ void orb_extractor::compute_fast_keypoints(std::vector<std::vector<cv::KeyPoint>
 #ifdef USE_OPENMP
 #pragma omp parallel for
 #endif
-        for (unsigned int i = 0; i < num_rows; ++i) {
+        for (unsigned int i = 0; i < num_rows; ++i)
+        {
             const unsigned int min_y = min_border_y + i * cell_size;
-            if (max_border_y - overlap <= min_y) {
+            if (max_border_y - overlap <= min_y)
+            {
                 continue;
             }
             unsigned int max_y = min_y + cell_size + overlap;
-            if (max_border_y < max_y) {
+            if (max_border_y < max_y)
+            {
                 max_y = max_border_y;
             }
 
 #ifdef USE_OPENMP
 #pragma omp parallel for
 #endif
-            for (unsigned int j = 0; j < num_cols; ++j) {
+            for (unsigned int j = 0; j < num_cols; ++j)
+            {
                 const unsigned int min_x = min_border_x + j * cell_size;
-                if (max_border_x - overlap <= min_x) {
+                if (max_border_x - overlap <= min_x)
+                {
                     continue;
                 }
                 unsigned int max_x = min_x + cell_size + overlap;
-                if (max_border_x < max_x) {
+                if (max_border_x < max_x)
+                {
                     max_x = max_border_x;
                 }
 
                 // patchの四隅いずれかがmask内である場合はFAST点を計算しない
-                if (!mask.empty()) {
-                    if (is_in_mask(min_y, min_x, scale_factor) || is_in_mask(max_y, min_x, scale_factor)
-                        || is_in_mask(min_y, max_x, scale_factor) || is_in_mask(max_y, max_x, scale_factor)) {
+                if (!mask.empty())
+                {
+                    if (is_in_mask(min_y, min_x, scale_factor) || is_in_mask(max_y, min_x, scale_factor) || is_in_mask(min_y, max_x, scale_factor) || is_in_mask(max_y, max_x, scale_factor))
+                    {
                         continue;
                     }
                 }
@@ -339,12 +390,14 @@ void orb_extractor::compute_fast_keypoints(std::vector<std::vector<cv::KeyPoint>
                          keypts_in_cell, orb_params_.ini_fast_thr_, true);
 
                 // 特徴点がなければ閾値を下げて再計算
-                if (keypts_in_cell.empty()) {
+                if (keypts_in_cell.empty())
+                {
                     cv::FAST(image_pyramid_.at(level).rowRange(min_y, max_y).colRange(min_x, max_x),
                              keypts_in_cell, orb_params_.min_fast_thr, true);
                 }
 
-                if (keypts_in_cell.empty()) {
+                if (keypts_in_cell.empty())
+                {
                     continue;
                 }
 
@@ -353,11 +406,13 @@ void orb_extractor::compute_fast_keypoints(std::vector<std::vector<cv::KeyPoint>
 #pragma omp critical
 #endif
                 {
-                    for (auto& keypt : keypts_in_cell) {
+                    for (auto &keypt : keypts_in_cell)
+                    {
                         keypt.pt.x += j * cell_size;
                         keypt.pt.y += i * cell_size;
                         // mask内かどうかを確認
-                        if (!mask.empty() && is_in_mask(min_border_y + keypt.pt.y, min_border_x + keypt.pt.x, scale_factor)) {
+                        if (!mask.empty() && is_in_mask(min_border_y + keypt.pt.y, min_border_x + keypt.pt.x, scale_factor))
+                        {
                             continue;
                         }
                         keypts_to_distribute.push_back(keypt);
@@ -366,7 +421,7 @@ void orb_extractor::compute_fast_keypoints(std::vector<std::vector<cv::KeyPoint>
             }
         }
 
-        std::vector<cv::KeyPoint>& keypts_at_level = all_keypts.at(level);
+        std::vector<cv::KeyPoint> &keypts_at_level = all_keypts.at(level);
         keypts_at_level.reserve(orb_params_.max_num_keypts_);
 
         // スケールごとの特徴点を木構造を用いて選別
@@ -377,7 +432,8 @@ void orb_extractor::compute_fast_keypoints(std::vector<std::vector<cv::KeyPoint>
         // patch sizeをscaleで補正したものがkeypoint sizeになる
         const unsigned int scaled_patch_size = fast_patch_size_ * scale_factors_.at(level);
 
-        for (auto& keypt : keypts_at_level) {
+        for (auto &keypt : keypts_at_level)
+        {
             // 座標は平行移動のみ補正(スケールについてはORB記述の後まで補正しない)
             keypt.pt.x += min_border_x;
             keypt.pt.y += min_border_y;
@@ -388,34 +444,39 @@ void orb_extractor::compute_fast_keypoints(std::vector<std::vector<cv::KeyPoint>
     }
 
     // compute orientations
-    for (unsigned int level = 0; level < orb_params_.num_levels_; ++level) {
+    for (unsigned int level = 0; level < orb_params_.num_levels_; ++level)
+    {
         compute_orientation(image_pyramid_.at(level), all_keypts.at(level));
     }
 }
 
-std::vector<cv::KeyPoint> orb_extractor::distribute_keypoints_via_tree(const std::vector<cv::KeyPoint>& keypts_to_distribute,
+std::vector<cv::KeyPoint> orb_extractor::distribute_keypoints_via_tree(const std::vector<cv::KeyPoint> &keypts_to_distribute,
                                                                        const int min_x, const int max_x, const int min_y, const int max_y,
-                                                                       const unsigned int num_keypts) const {
+                                                                       const unsigned int num_keypts) const
+{
     auto nodes = initialize_nodes(keypts_to_distribute, min_x, max_x, min_y, max_y);
 
     // これ以上の分岐が可能な leaf node のベクトル
     // 次イテレーションの分岐で指定特徴点数を超えるときに使用される
     // 指定の特徴点数で切り上げるときにkeypoint数でソートされる
-    std::vector<std::pair<int, orb_extractor_node*>> leaf_nodes_pool;
+    std::vector<std::pair<int, orb_extractor_node *>> leaf_nodes_pool;
     leaf_nodes_pool.reserve(nodes.size() * 10);
 
     // 特徴点(keypts_)が指定数確保されているかを表すフラグ
     bool is_filled = false;
 
-    while (true) {
+    while (true)
+    {
         const unsigned int prev_size = nodes.size();
 
         auto iter = nodes.begin();
         leaf_nodes_pool.clear();
 
         // nodeを分岐し，分岐前のnodeをnodesから消去する
-        while (iter != nodes.end()) {
-            if (iter->is_leaf_node_) {
+        while (iter != nodes.end())
+        {
+            if (iter->is_leaf_node_)
+            {
                 iter++;
                 continue;
             }
@@ -428,20 +489,23 @@ std::vector<cv::KeyPoint> orb_extractor::distribute_keypoints_via_tree(const std
         }
 
         // node数が指定特徴点数を超えるか，または木の分岐が進まなくなったとき分岐を終了する
-        if (num_keypts <= nodes.size() || nodes.size() == prev_size) {
+        if (num_keypts <= nodes.size() || nodes.size() == prev_size)
+        {
             is_filled = true;
             break;
         }
 
         // 次イテレーションでの特徴点数が指定数を超える場合は，
         // 最終ノードを追加してキープする特徴点を決定する
-        if (num_keypts < nodes.size() + leaf_nodes_pool.size()) {
+        if (num_keypts < nodes.size() + leaf_nodes_pool.size())
+        {
             is_filled = false;
             break;
         }
     }
 
-    while (!is_filled) {
+    while (!is_filled)
+    {
         const unsigned int prev_size = nodes.size();
 
         auto prev_leaf_nodes_pool = leaf_nodes_pool;
@@ -450,21 +514,24 @@ std::vector<cv::KeyPoint> orb_extractor::distribute_keypoints_via_tree(const std
         // leaf nodeが持つ特徴点数で降順ソート
         std::sort(prev_leaf_nodes_pool.rbegin(), prev_leaf_nodes_pool.rend());
         // 持っている特徴点が多いleaf nodeから処理
-        for (const auto& prev_leaf_node : prev_leaf_nodes_pool) {
+        for (const auto &prev_leaf_node : prev_leaf_nodes_pool)
+        {
             // nodeを分岐して割り当てる
             const auto child_nodes = prev_leaf_node.second->divide_node();
             assign_child_nodes(child_nodes, nodes, leaf_nodes_pool);
             // 分割前の不要なnodeを消去
             nodes.erase(prev_leaf_node.second->iter_);
 
-            if (num_keypts <= nodes.size()) {
+            if (num_keypts <= nodes.size())
+            {
                 is_filled = true;
                 break;
             }
         }
 
         // leaf node数が指定数に到達したか分岐が進まなくなったとき分岐を終了する
-        if (is_filled || num_keypts <= nodes.size() || nodes.size() == prev_size) {
+        if (is_filled || num_keypts <= nodes.size() || nodes.size() == prev_size)
+        {
             is_filled = true;
             break;
         }
@@ -473,8 +540,9 @@ std::vector<cv::KeyPoint> orb_extractor::distribute_keypoints_via_tree(const std
     return find_keypoints_with_max_response(nodes);
 }
 
-std::list<orb_extractor_node> orb_extractor::initialize_nodes(const std::vector<cv::KeyPoint>& keypts_to_distribute,
-                                                              const int min_x, const int max_x, const int min_y, const int max_y) const {
+std::list<orb_extractor_node> orb_extractor::initialize_nodes(const std::vector<cv::KeyPoint> &keypts_to_distribute,
+                                                              const int min_x, const int max_x, const int min_y, const int max_y) const
+{
     // rootから分岐するnodeの数
     // 各nodeに割り当てられる画像領域がおおよそ正方形になるように割り当てる
     const unsigned int num_initial_nodes = std::round(static_cast<double>(max_x - min_x) / (max_y - min_y));
@@ -486,11 +554,12 @@ std::list<orb_extractor_node> orb_extractor::initialize_nodes(const std::vector<
     std::list<orb_extractor_node> nodes;
 
     // rootから分岐したnode
-    std::vector<orb_extractor_node*> initial_nodes;
+    std::vector<orb_extractor_node *> initial_nodes;
     initial_nodes.resize(num_initial_nodes);
 
     // initial_nodes を初期化し，nodesに格納する
-    for (unsigned int i = 0; i < num_initial_nodes; ++i) {
+    for (unsigned int i = 0; i < num_initial_nodes; ++i)
+    {
         orb_extractor_node node;
 
         node.pt_begin_ = cv::Point2i(delta_x * static_cast<double>(i), 0);
@@ -502,15 +571,18 @@ std::list<orb_extractor_node> orb_extractor::initialize_nodes(const std::vector<
     }
 
     // 与えられた特徴点をinitial_nodesに格納する．
-    for (const auto& keypt : keypts_to_distribute) {
+    for (const auto &keypt : keypts_to_distribute)
+    {
         initial_nodes.at(keypt.pt.x / delta_x)->keypts_.push_back(keypt);
     }
 
     // leaf nodeの判定と特徴点が空なleaf nodeの消去を行う
     auto iter = nodes.begin();
-    while (iter != nodes.end()) {
+    while (iter != nodes.end())
+    {
         // 空だったら消去する
-        if (iter->keypts_.empty()) {
+        if (iter->keypts_.empty())
+        {
             iter = nodes.erase(iter);
             continue;
         }
@@ -521,14 +593,18 @@ std::list<orb_extractor_node> orb_extractor::initialize_nodes(const std::vector<
     return nodes;
 }
 
-void orb_extractor::assign_child_nodes(const std::array<orb_extractor_node, 4>& child_nodes, std::list<orb_extractor_node>& nodes,
-                                       std::vector<std::pair<int, orb_extractor_node*>>& leaf_nodes) const {
-    for (const auto& child_node : child_nodes) {
-        if (child_node.keypts_.empty()) {
+void orb_extractor::assign_child_nodes(const std::array<orb_extractor_node, 4> &child_nodes, std::list<orb_extractor_node> &nodes,
+                                       std::vector<std::pair<int, orb_extractor_node *>> &leaf_nodes) const
+{
+    for (const auto &child_node : child_nodes)
+    {
+        if (child_node.keypts_.empty())
+        {
             continue;
         }
         nodes.push_front(child_node);
-        if (child_node.keypts_.size() == 1) {
+        if (child_node.keypts_.size() == 1)
+        {
             continue;
         }
         leaf_nodes.emplace_back(std::make_pair(child_node.keypts_.size(), &nodes.front()));
@@ -537,19 +613,23 @@ void orb_extractor::assign_child_nodes(const std::array<orb_extractor_node, 4>& 
     }
 }
 
-std::vector<cv::KeyPoint> orb_extractor::find_keypoints_with_max_response(std::list<orb_extractor_node>& nodes) const {
+std::vector<cv::KeyPoint> orb_extractor::find_keypoints_with_max_response(std::list<orb_extractor_node> &nodes) const
+{
     // 出力される特徴点のvector
     std::vector<cv::KeyPoint> result_keypts;
     result_keypts.reserve(nodes.size());
 
     // 各nodeの画像領域内の特徴点の中でresponseが最大となる特徴点をresult_keyptsに格納する
-    for (auto& node : nodes) {
-        auto& node_keypts = node.keypts_;
-        auto& keypt = node_keypts.at(0);
+    for (auto &node : nodes)
+    {
+        auto &node_keypts = node.keypts_;
+        auto &keypt = node_keypts.at(0);
         double max_response = keypt.response;
 
-        for (unsigned int k = 1; k < node_keypts.size(); ++k) {
-            if (node_keypts.at(k).response > max_response) {
+        for (unsigned int k = 1; k < node_keypts.size(); ++k)
+        {
+            if (node_keypts.at(k).response > max_response)
+            {
                 keypt = node_keypts.at(k);
                 max_response = node_keypts.at(k).response;
             }
@@ -561,36 +641,45 @@ std::vector<cv::KeyPoint> orb_extractor::find_keypoints_with_max_response(std::l
     return result_keypts;
 }
 
-void orb_extractor::compute_orientation(const cv::Mat& image, std::vector<cv::KeyPoint>& keypts) const {
-    for (auto& keypt : keypts) {
+void orb_extractor::compute_orientation(const cv::Mat &image, std::vector<cv::KeyPoint> &keypts) const
+{
+    for (auto &keypt : keypts)
+    {
         keypt.angle = ic_angle(image, keypt.pt);
     }
 }
 
-void orb_extractor::correct_keypoint_scale(std::vector<cv::KeyPoint>& keypts_at_level, const unsigned int level) const {
-    if (level == 0) {
+void orb_extractor::correct_keypoint_scale(std::vector<cv::KeyPoint> &keypts_at_level, const unsigned int level) const
+{
+    if (level == 0)
+    {
         return;
     }
     const float scale_at_level = scale_factors_.at(level);
-    for (auto& keypt_at_level : keypts_at_level) {
+    for (auto &keypt_at_level : keypts_at_level)
+    {
         keypt_at_level.pt *= scale_at_level;
     }
 }
 
-float orb_extractor::ic_angle(const cv::Mat& image, const cv::Point2f& point) const {
+float orb_extractor::ic_angle(const cv::Mat &image, const cv::Point2f &point) const
+{
     int m_01 = 0, m_10 = 0;
 
-    const uchar* const center = &image.at<uchar>(cvRound(point.y), cvRound(point.x));
+    const uchar *const center = &image.at<uchar>(cvRound(point.y), cvRound(point.x));
 
-    for (int u = -fast_half_patch_size_; u <= fast_half_patch_size_; ++u) {
+    for (int u = -fast_half_patch_size_; u <= fast_half_patch_size_; ++u)
+    {
         m_10 += u * center[u];
     }
 
     const auto step = static_cast<int>(image.step1());
-    for (int v = 1; v <= fast_half_patch_size_; ++v) {
+    for (int v = 1; v <= fast_half_patch_size_; ++v)
+    {
         unsigned int v_sum = 0;
         const int d = u_max_.at(v);
-        for (int u = -d; u <= d; ++u) {
+        for (int u = -d; u <= d; ++u)
+        {
             const int val_plus = center[u + v * step];
             const int val_minus = center[u - v * step];
             v_sum += (val_plus - val_minus);
@@ -602,54 +691,55 @@ float orb_extractor::ic_angle(const cv::Mat& image, const cv::Point2f& point) co
     return cv::fastAtan2(m_01, m_10);
 }
 
-void orb_extractor::compute_orb_descriptors(const cv::Mat& image, const std::vector<cv::KeyPoint>& keypts, cv::Mat& descriptors) const {
+void orb_extractor::compute_orb_descriptors(const cv::Mat &image, const std::vector<cv::KeyPoint> &keypts, cv::Mat &descriptors) const
+{
     descriptors = cv::Mat::zeros(keypts.size(), 32, CV_8UC1);
 
-    for (unsigned int i = 0; i < keypts.size(); ++i) {
+    for (unsigned int i = 0; i < keypts.size(); ++i)
+    {
         compute_orb_descriptor(keypts.at(i), image, &pattern_.at(0), descriptors.ptr(i));
     }
 }
 
-void orb_extractor::compute_orb_descriptor(const cv::KeyPoint& keypt, const cv::Mat& image, const cv::Point* pattern, uchar* desc) const {
+void orb_extractor::compute_orb_descriptor(const cv::KeyPoint &keypt, const cv::Mat &image, const cv::Point *pattern, uchar *desc) const
+{
     const float angle = keypt.angle * M_PI / 180.0;
     const float cos_angle = util::cos(angle);
     const float sin_angle = util::sin(angle);
 
-    const uchar* const center = &image.at<uchar>(cvRound(keypt.pt.y), cvRound(keypt.pt.x));
+    const uchar *const center = &image.at<uchar>(cvRound(keypt.pt.y), cvRound(keypt.pt.x));
     const auto step = static_cast<int>(image.step);
 
 #ifdef USE_SSE_ORB
-#if !((defined _MSC_VER && defined _M_X64) \
-      || (defined __GNUC__ && defined __x86_64__ && defined __SSE2__ && !defined __APPLE__) \
-      || CV_SSE2)
+#if !((defined _MSC_VER && defined _M_X64) || (defined __GNUC__ && defined __x86_64__ && defined __SSE2__ && !defined __APPLE__) || CV_SSE2)
 #error "The processor is not compatible with SSE. Please configure the CMake with -DUSE_SSE_ORB=OFF."
 #endif
 
     __m128 vs;
     __m128i vi;
-    int32_t i[4] __attribute__ ((aligned(16)));
+    int32_t i[4] __attribute__((aligned(16)));
 
-#define COMPARE_ORB_POINTS(idx1, idx2) \
-        (vs = _mm_setr_ps(pattern[idx1].x * sin_angle + pattern[idx1].y * cos_angle, \
-                          pattern[idx1].x * cos_angle - pattern[idx1].y * sin_angle, \
-                          pattern[idx2].x * sin_angle + pattern[idx2].y * cos_angle, \
-                          pattern[idx2].x * cos_angle - pattern[idx2].y * sin_angle), \
-         vi = _mm_cvtps_epi32(vs), \
-         _mm_store_si128(reinterpret_cast<__m128i*>(i), vi), \
-         center[i[0] * step + i[1]] < center[i[2] * step + i[3]])
+#define COMPARE_ORB_POINTS(idx1, idx2)                                            \
+    (vs = _mm_setr_ps(pattern[idx1].x * sin_angle + pattern[idx1].y * cos_angle,  \
+                      pattern[idx1].x * cos_angle - pattern[idx1].y * sin_angle,  \
+                      pattern[idx2].x * sin_angle + pattern[idx2].y * cos_angle,  \
+                      pattern[idx2].x * cos_angle - pattern[idx2].y * sin_angle), \
+     vi = _mm_cvtps_epi32(vs),                                                    \
+     _mm_store_si128(reinterpret_cast<__m128i *>(i), vi),                         \
+     center[i[0] * step + i[1]] < center[i[2] * step + i[3]])
 
 #else
 
 #define GET_VALUE(idx) \
-        (center[cvRound(pattern[idx].x * sin_angle + pattern[idx].y * cos_angle) * step \
-                + cvRound(pattern[idx].x * cos_angle - pattern[idx].y * sin_angle)])
+    (center[cvRound(pattern[idx].x * sin_angle + pattern[idx].y * cos_angle) * step + cvRound(pattern[idx].x * cos_angle - pattern[idx].y * sin_angle)])
 
 #define COMPARE_ORB_POINTS(idx1, idx2) \
-        (GET_VALUE(idx1) < GET_VALUE(idx2))
+    (GET_VALUE(idx1) < GET_VALUE(idx2))
 
 #endif
 
-    for (unsigned int shift = 0; shift < 32; ++shift, pattern += 16) {
+    for (unsigned int shift = 0; shift < 32; ++shift, pattern += 16)
+    {
         int32_t val;
 
         val = COMPARE_ORB_POINTS(0, 1);

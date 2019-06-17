@@ -8,7 +8,7 @@
 
 #include <openvslam/system.h>
 #include <openvslam/config.h>
-
+#include <fstream>
 #include <sys/stat.h> // for checking if a file exists
 #include <chrono>
 #include <numeric>
@@ -72,7 +72,9 @@ void mono_tracking(const std::shared_ptr<openvslam::config> &cfg,
                 unsigned int previous_num = 0;
                 bool all_read = false;
                 cv::Mat img;
+                std::cout << "before capture" << std::endl;
                 cv::VideoCapture capture(in_pipe);
+                std::cout << "after capture" << std::endl;
                 while (previous_num != i || i < 2)
                 {
                     previous_num = i;

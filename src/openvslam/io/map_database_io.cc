@@ -5,18 +5,21 @@
 #include "openvslam/data/bow_database.h"
 #include "openvslam/data/map_database.h"
 #include "openvslam/io/map_database_io.h"
-
+#include <fstream>
 #include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
 
-namespace openvslam {
-namespace io {
+namespace openvslam
+{
+namespace io
+{
 
-map_database_io::map_database_io(data::camera_database* cam_db, data::map_database* map_db,
-                                 data::bow_database* bow_db, data::bow_vocabulary* bow_vocab)
-        : cam_db_(cam_db), map_db_(map_db), bow_db_(bow_db), bow_vocab_(bow_vocab) {}
+map_database_io::map_database_io(data::camera_database *cam_db, data::map_database *map_db,
+                                 data::bow_database *bow_db, data::bow_vocabulary *bow_vocab)
+    : cam_db_(cam_db), map_db_(map_db), bow_db_(bow_db), bow_vocab_(bow_vocab) {}
 
-void map_database_io::save_message_pack(const std::string& path) {
+void map_database_io::save_message_pack(const std::string &path)
+{
     std::lock_guard<std::mutex> lock(data::map_database::mtx_database_);
 
     assert(cam_db_ && map_db_);
@@ -34,18 +37,21 @@ void map_database_io::save_message_pack(const std::string& path) {
 
     std::ofstream ofs(path, std::ios::out | std::ios::binary);
 
-    if (ofs.is_open()) {
+    if (ofs.is_open())
+    {
         spdlog::info("save the MessagePack file of database to {}", path);
         const auto msgpack = nlohmann::json::to_msgpack(json);
-        ofs.write(reinterpret_cast<const char*>(msgpack.data()), msgpack.size() * sizeof(uint8_t));
+        ofs.write(reinterpret_cast<const char *>(msgpack.data()), msgpack.size() * sizeof(uint8_t));
         ofs.close();
     }
-    else {
+    else
+    {
         spdlog::critical("cannot create a file at {}", path);
     }
 }
 
-void map_database_io::load_message_pack(const std::string& path) {
+void map_database_io::load_message_pack(const std::string &path)
+{
     std::lock_guard<std::mutex> lock(data::map_database::mtx_database_);
 
     // 1. initialize database
@@ -57,17 +63,20 @@ void map_database_io::load_message_pack(const std::string& path) {
     // 2. load binary bytes
 
     std::ifstream ifs(path, std::ios::in | std::ios::binary);
-    if (!ifs.is_open()) {
+    if (!ifs.is_open())
+    {
         spdlog::critical("cannot load the file at {}", path);
         throw std::runtime_error("cannot load the file at " + path);
     }
 
     spdlog::info("load the MessagePack file of database from {}", path);
     std::vector<uint8_t> msgpack;
-    while (true) {
+    while (true)
+    {
         uint8_t buffer;
-        ifs.read(reinterpret_cast<char*>(&buffer), sizeof(uint8_t));
-        if (ifs.eof()) {
+        ifs.read(reinterpret_cast<char *>(&buffer), sizeof(uint8_t));
+        if (ifs.eof())
+        {
             break;
         }
         msgpack.push_back(buffer);
@@ -91,7 +100,8 @@ void map_database_io::load_message_pack(const std::string& path) {
     const auto json_landmarks = json.at("landmarks");
     map_db_->from_json(cam_db_, bow_vocab_, bow_db_, json_keyfrms, json_landmarks);
     const auto keyfrms = map_db_->get_all_keyframes();
-    for (const auto keyfrm : keyfrms) {
+    for (const auto keyfrm : keyfrms)
+    {
         bow_db_->add_keyframe(keyfrm);
     }
 }

@@ -1,7 +1,7 @@
 #include "openvslam/data/keyframe.h"
 #include "openvslam/data/map_database.h"
 #include "openvslam/io/trajectory_io.h"
-
+#include <fstream>
 #include <iostream>
 #include <iomanip>
 
