@@ -83,7 +83,8 @@ void publisher::run()
             write_to_rust(sockfd, serialized_map_data);
         }
 
-        const auto serialized_frame_data = data_serializer_->serialize_latest_frame(image_quality_);
+        // NOT DOING ANYTHING WITH THE FRAME RIGHT NOW
+        // const auto serialized_frame_data = data_serializer_->serialize_latest_frame(image_quality_);
         // if (!serialized_frame_data.empty())
         // {
         //     client_->emit("image_publish", serialized_frame_data);
