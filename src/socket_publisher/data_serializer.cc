@@ -101,8 +101,8 @@ std::string data_serializer::serialize_as_protobuf(const std::vector<openvslam::
     {
 
         const auto id = keyfrm->id_;
-        const auto pose = keyfrm->get_cam_pose_inv();
-        // const auto pose = keyfrm->get_cam_pose();
+        // const auto pose = keyfrm->get_cam_pose_inv();
+        const auto pose = keyfrm->get_cam_pose();
         const auto pose_hash = get_mat_hash(pose); // get zipped code (likely hash)
 
         next_keyframe_hash_map[id] = pose_hash;
