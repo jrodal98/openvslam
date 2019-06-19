@@ -41,7 +41,7 @@ keyframe::keyframe(const frame &frm, map_database *map_db, bow_database *bow_db)
     // set pose parameters (cam_pose_wc_, cam_center_) using frm.cam_pose_cw_
     set_cam_pose(frm.cam_pose_cw_);
 
-    bgr_colors = frm.bgr_colors;
+        bgr_colors = frm.bgr_colors;
 }
 
 keyframe::keyframe(const unsigned int id, const unsigned int src_frm_id, const double timestamp,
