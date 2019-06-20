@@ -16,7 +16,6 @@ namespace openvslam
 {
 namespace data
 {
-
 std::atomic<unsigned int> frame::next_id_{0};
 
 frame::frame(const cv::Mat &img_gray, const double timestamp,
@@ -26,6 +25,7 @@ frame::frame(const cv::Mat &img_gray, const double timestamp,
     : id_(next_id_++), bow_vocab_(bow_vocab), extractor_(extractor), extractor_right_(nullptr),
       timestamp_(timestamp), camera_(camera), depth_thr_(depth_thr)
 {
+    this->img_colored = img_colored;
     // ORBのスケール情報を取得
     update_orb_info();
 
@@ -53,13 +53,6 @@ frame::frame(const cv::Mat &img_gray, const double timestamp,
 
     // 全特徴点をグリッドに割り当てる
     assign_keypoints_to_grid(camera_, undist_keypts_, keypt_indices_in_cells_);
-    auto color_copy = img_colored.clone();
-    cv::cvtColor(color_copy, color_copy, cv::COLOR_XYZ2BGR);
-    bgr_colors = color_copy.at<cv::Vec3b>(keypts_.at(0).pt);
-    // float x = bgr_colors.val[0];
-    // float y = bgr_colors.val[1];
-    // float z = bgr_colors.val[2];
-    // std::cout << "(" << x << ", " << y << ", " << z << ")" << std::endl;
 }
 
 frame::frame(const cv::Mat &left_img_gray, const cv::Mat &right_img_gray, const double timestamp,
@@ -70,6 +63,7 @@ frame::frame(const cv::Mat &left_img_gray, const cv::Mat &right_img_gray, const 
       timestamp_(timestamp), camera_(camera), depth_thr_(depth_thr)
 {
     // ORBのスケール情報を取得
+    this->img_colored = img_colored;
     update_orb_info();
 
     // ORB特徴量を抽出
@@ -102,8 +96,6 @@ frame::frame(const cv::Mat &left_img_gray, const cv::Mat &right_img_gray, const 
 
     // 全特徴点をグリッドに割り当てる
     assign_keypoints_to_grid(camera_, undist_keypts_, keypt_indices_in_cells_);
-
-    bgr_colors = img_colored.at<cv::Vec3b>(keypts_.at(0).pt);
 }
 
 frame::frame(const cv::Mat &img_gray, const cv::Mat &img_depth, const double timestamp,
@@ -114,6 +106,7 @@ frame::frame(const cv::Mat &img_gray, const cv::Mat &img_depth, const double tim
       timestamp_(timestamp), camera_(camera), depth_thr_(depth_thr)
 {
     // ORBのスケール情報を取得
+    this->img_colored = img_colored;
     update_orb_info();
 
     // ORB特徴量を抽出
@@ -139,12 +132,6 @@ frame::frame(const cv::Mat &img_gray, const cv::Mat &img_depth, const double tim
 
     // 全特徴点をグリッドに割り当てる
     assign_keypoints_to_grid(camera_, undist_keypts_, keypt_indices_in_cells_);
-    cv::cvtColor(img_colored, img_colored, cv::COLOR_XYZ2BGR);
-    bgr_colors = img_colored.at<cv::Vec3b>(keypts_.at(0).pt);
-    float x = bgr_colors.val[0];
-    float y = bgr_colors.val[1];
-    float z = bgr_colors.val[2];
-    std::cout << "(" << x << ", " << y << ", " << z << ")" << std::endl;
 }
 
 void frame::set_cam_pose(const Mat44_t &cam_pose_cw)

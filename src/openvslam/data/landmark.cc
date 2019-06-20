@@ -425,7 +425,7 @@ nlohmann::json landmark::to_json() const
 
 cv::Vec3b landmark::get_bgr() const
 {
-    return ref_keyfrm_->bgr_colors;
+    return color;
 }
 
 } // namespace data

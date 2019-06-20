@@ -249,8 +249,8 @@ public:
     std::vector<float> level_sigma_sq_;
     //! list of 1 / sigma^2 for optimization
     std::vector<float> inv_level_sigma_sq_;
-    // store the bgr colors at a specific keypoint
-    cv::Vec3b bgr_colors;
+
+    cv::Mat img_colored;
 
 private:
     //! enumeration to control the behavior of extract_orb()

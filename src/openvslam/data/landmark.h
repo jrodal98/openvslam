@@ -128,6 +128,8 @@ public:
     unsigned int ref_keyfrm_id_in_loop_fusion_ = 0;
     Vec3_t pos_w_after_global_BA_;
     unsigned int loop_BA_identifier_ = 0;
+    
+    cv::Vec3b color;
 
 private:
     //! world coordinates of this landmark

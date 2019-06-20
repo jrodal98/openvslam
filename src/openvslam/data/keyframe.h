@@ -289,7 +289,7 @@ public:
     //! list of 1 / sigma^2 for optimization
     const std::vector<float> inv_level_sigma_sq_;
 
-    cv::Vec3b bgr_colors;
+    std::vector<cv::Vec3b> colors;
 
 private:
     //-----------------------------------------

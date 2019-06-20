@@ -76,7 +76,7 @@ void mono_tracking(const std::shared_ptr<openvslam::config> &cfg,
                 while (previous_num != i || i < 2)
                 {
                     previous_num = i;
-                    std::cout << i << std::endl;
+                    std::cout << "Frame: " << i << std::endl;
                     capture.read(img);
 
                     const auto tp_1 = std::chrono::steady_clock::now();

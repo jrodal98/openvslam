@@ -191,8 +191,9 @@ std::string data_serializer::serialize_as_protobuf(const std::vector<openvslam::
     std::unordered_map<unsigned int, double> next_point_hash_map;
     for (const auto landmark : all_landmarks)
     {
-        if (landmark->num_observations() < 3)
+        if (landmark->num_observations() < 4)
             continue;
+
         const auto id = landmark->id_;
         const auto pos = landmark->get_pos_in_world();
         const auto zip = get_vec_hash(pos);
@@ -223,6 +224,7 @@ std::string data_serializer::serialize_as_protobuf(const std::vector<openvslam::
         {
             landmark_obj->add_color(bgr.val[i]);
         }
+        // std::printf("(%d,%d,%d)\n", bgr.val[0], bgr.val[1], bgr.val[2]);
     }
     // removed points are remaining in "point_zips".
     for (const auto &itr : *point_hash_map_)
