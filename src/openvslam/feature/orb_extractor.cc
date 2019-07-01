@@ -64,7 +64,7 @@ void orb_extractor::extract(const cv::_InputArray &in_image, const cv::_InputArr
                             std::vector<cv::KeyPoint> &keypts, const cv::_OutputArray &out_descriptors)
 {
 
-    auto akaze = cv::AKAZE::create();
+    auto akaze = cv::AKAZE::create(cv::AKAZE::DESCRIPTOR_MLDB, 0, 3, 0.0001000000047F);
     akaze->detectAndCompute(in_image, in_image_mask, keypts, out_descriptors);
     return;
     if (in_image.empty())
